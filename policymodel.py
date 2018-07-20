@@ -4,14 +4,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 # inp=torch.empty(size=(3,1),dtype=torch.float)
 class Policy(nn.Module):
+
     def __init__(self):
         super(Policy,self).__init__()
-#         self.bn=nn.BatchNorm1d(seq_len)
-        self.conv1=nn.Conv2d(8,16,3)
+        self.conv1=nn.Conv2d(24,16,3)
         self.bn1=nn.BatchNorm2d(16)
         self.conv2=nn.Conv2d(16,32,3)
         self.bn2=nn.BatchNorm2d(32)
-        mm1=nn.Conv2d(8,16,3)
+        mm1=nn.Conv2d(24,16,3)
         bn1=nn.BatchNorm2d(16)
         mm2=nn.Conv2d(16,32,3)
         bn2=nn.BatchNorm2d(32)
@@ -31,6 +31,7 @@ class Policy(nn.Module):
         self.rewards=[]
         # self.h0 = torch.randn(self.num_layers, x.size(0), self.hidden_size)
         # self.c0 = torch.randn(self.num_layers, x.size(0), self.hidden_size)
+
     def reset():
         self.dic={}
         self.logprob_history= []

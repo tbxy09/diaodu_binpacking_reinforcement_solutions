@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from util.threed_view import *
+import gc
 
 MA_NUM=6000
 APP_NUM=9338
@@ -12,20 +13,24 @@ class Env_stat():
             grouped=df[['iid','aid']].groupby('aid')
             a_i={}
             i_a={}
+            a_idx={}
             def sum_():
                 return {
                     'iid':np.sum,
                     'num':lambda x: len(x),
                 }
             self.df_a_i=grouped.iid.agg(sum_()).reset_index()
-            self.df_a_i=pd.merge(self.app,self.df_a_i,on='aid',how='inner')
+            self.df_a_i=pd.merge(self.app[['aid','cpu']],self.df_a_i,on='aid',how='inner')
             for a,i in zip(self.df_a_i.aid,self.df_a_i.num):
-                self.a_i[a]=i
+                a_i[a]=i
 
+            for idx,a in zip(self.df_a_i.index,self.df_a_i.aid):
+                a_idx[a]=idx
             # a_i['app_7189']
             for i,a in zip(df.iid,df.aid):
             #     print(i,a)
-                self.i_a[i]=a
+                i_a[i]=a
+            return a_i,a_idx,i_a
 
         def get_unit_app_resource(app):
 
@@ -34,29 +39,27 @@ class Env_stat():
             app_disk=app['disk']
             return {
                     'c':app_cpu.astype(float).max(axis=1).values
+                    ,'cm':app_cpu.astype(float).mean(axis=1).values
                     ,'m':app_mem.astype(float).max(axis=1).values
                     ,'d':app['disk'].astype(float).values
                     ,'p_pm':app['p'].astype(float).values
                     ,'m_pm':app['m'].astype(float).values
                     ,'pm':app['pm'].astype(float).values
                    }
-
         self.ret_v_cpu=[]
         self.ret_v_mem=[]
         self.ret_v_disk=[]
         self.ret_v_p=[]
         self.ret_v_m=[]
         self.ret_v_pm=[]
-        self.ret_v_cpu_abs=[]
-        self.ret_v_mem_abs=[]
+        self.ret_v_cpu_mean=[]
         self.ret_app_infer=[]
         def init_deploy_state():
-            return {'c':np.zeros(shape=(MA_NUM,98))
-                    ,'m':np.zeros(shape=(MA_NUM,98))
+            return {'c':np.zeros(shape=(MA_NUM,))
+                    ,'m':np.zeros(shape=(MA_NUM,))
                     ,'a':np.zeros(shape=(MA_NUM,))
                     ,'d':np.zeros(shape=(MA_NUM,))
-                    ,'ca':np.zeros(shape=(MA_NUM,98))
-                    ,'ma':np.zeros(shape=(MA_NUM,98))
+                    ,'cm':np.zeros(shape=(MA_NUM,))
                     ,'p_pm':np.zeros(shape=(MA_NUM,))
                     ,'m_pm':np.zeros(shape=(MA_NUM,))
                     ,'pm':np.zeros(shape=(MA_NUM,))
@@ -72,8 +75,8 @@ class Env_stat():
         self.cur=0
 #         self.cpu_limit=self.mn.cpu.values
 #         self.mem_limit=self.mn.mem.values
-        self.res_cpu=self.mn.cpu.values
-        self.res_mem=self.mn.mem.values
+        # self.res_cpu=self.mn.cpu.values
+        # self.res_mem=self.mn.mem.values
 
         self.col_req=np.arange(98)
         self.col_cpu_req=np.arange(98)*2
@@ -84,7 +87,10 @@ class Env_stat():
 
         self.a_i={}
         self.i_a={}
-        gen_ai_map(df_ins_sum)
+        self.a_idx={}
+        self.a_i,self.a_idx,self.i_a=gen_ai_map(df_ins_sum)
+        del df_ins_sum
+        gc.collect()
         # this is base block
         # self.unit_c,self.unit_m,self.unit_d,self.unit_p,self.unit_m,self.unit_pm=get_unit_app_resource(self.app)
         self.unit=get_unit_app_resource(self.app)
@@ -100,18 +106,22 @@ class Env_stat():
 
         # used for log
         self.dic={}
+        self.clean4room()
         # self.matrix=np.zeros([])
         # self.ab=self.app_inter.groupby('aid').apply(lambda x:x.sort_values(by='v'))
 #         pass
 
-    # def save_checkpoints(self):
-    #     fn='policy{}.pth.tar'.format(e)
-    #     dic['saved_log_probs'].append(log_probs)
-    #     dic['rewards'].append(rewards)
-    #     # dic['policy_rewards']=[]
-    #     # dic['policy_rewards'].append(policy_rewards)
-    #     # dic['len'].append(len(self.rewards))
-    #     torch.save(dic,fn)
+    def save_checkpoints(self):
+        fn='policy{}.pth.tar'.format(e)
+        dic['saved_log_probs'].append(log_probs)
+        dic['rewards'].append(rewards)
+        # dic['policy_rewards']=[]
+        # dic['policy_rewards'].append(policy_rewards)
+        # dic['len'].append(len(self.rewards))
+        torch.save(dic,fn)
+    def clean4room(self):
+        del self.app
+        gc.collect()
     def load_checkpoints(self,dic):
         self.li_cpu=dic['li_cpu']
         self.li_mem=dic['li_mem']
@@ -121,6 +131,12 @@ class Env_stat():
 
     def pack_plot(self,li,axis=0,verbose=0):
         v_=np.sum(li,axis=axis)
+        p=pd.Series(v_)
+        if verbose:
+            p.plot()
+        return v_
+    def pack_plot_max(self,li,axis=0,verbose=0):
+        v_=np.max(li,axis=axis)
         p=pd.Series(v_)
         if verbose:
             p.plot()
@@ -176,19 +192,20 @@ class Env_stat():
         self.env_matrix(cur)
 
         self.dic['matrix']=self.matrix
+        self.dic['deploy_state']=self.deploy_state
 
         # if any(self.env_mem.max(1)>1):
-        for k in  ['p_pm','m_pm','pm']:
-            if any(self.deploy_state[k])>1:
+        for k in  ['c','m','d','p_pm','m_pm','pm']:
+            if any(self.deploy_state[k]>1):
                 print(k ,'end')
                 # return self.env_cpu.sum(0).sum(0),1
                 return 1,1
 
-        for k in  ['c','m']:
-            if any(self.deploy_state[k].max(1))>1:
-                print(k ,'end')
-                # return self.env_cpu.sum(0).sum(0),1
-                return 1,1
+        # for k in  ['c','m']:
+        #     if any(self.deploy_state[k].max(1)>1):
+        #         print(k ,'end')
+        #         # return self.env_cpu.sum(0).sum(0),1
+        #         return 1,1
 
         # text=(self.env_app+' ').sum()
         text=(self.deploy_state['a']+' ').sum()
@@ -200,38 +217,37 @@ class Env_stat():
         # [re.findall('(app_3432).*?(app_7652).*?(app_8618).*?(app_1300).*?(app_4663).*?(app_8324)',text) for each in ab]
         # r=pd.Series(r).apply(lambda x: len(x)!=0)
         # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
+
         end=re_find(text)
+
         if end==1:
             print('infer end')
+
         # if any(r)==True:
             # print('end')
 
         # return self.env_cpu.sum(0).sum(0),end
         return 1,end
 
-    def update(self,cur,choice):
-#         cur is kind of timmer
-        def get_cpu_usage(cur,res_cpu):
+    def update_history(self,cur,choice):
+
+        def get_cpu_usage_history(cur,res_cpu):
         #     res_v=res[index]
             ps=self.app[self.col_req].iloc[cur,self.col_cpu_req].astype(float)
-            def f(x):
-                return pd.Series([x/res_cpu,x],index=['per','v'])
             if self.verbose==1:
                 ps.apply(lambda x: x/res_cpu).plot()
             return ps.apply(lambda x: x/res_cpu)
             # return ps.apply(f)
 
-        def get_mem_usage(cur,res_mem):
+        def get_mem_usage_history(cur,res_mem):
         #     res_v=res[index]
             ps=self.app[self.col_req].iloc[cur,self.col_mem_req].astype(float)
             if self.verbose==1:
                 ps.apply(lambda x: x/res_mem).plot()
             return ps.apply(lambda x: x/res_mem)
-#         op_policy=lambda cur: cur*10+1
 
         def get_fe_nt_usage(cur,key,res_total):
-        #     res_v=res[index]
-            return self.app[key].iloc[cur].astype(float)/res_total
+            return self.unit[key][cur].astype(float)/res_total
 
         # def get_pm_usage(cur,res_pm):
         # #     res_v=res[index]
@@ -244,7 +260,6 @@ class Env_stat():
         # s=df_machine.iloc[choice-3:choice+3][['index','cpu']]
 
         z98=pd.Series(np.zeros(98))
-
         # v=get_cpu_usage(cur,res_cpu)
         # v=get_mem_usage(cur,res_mem)
         # map_cpu={0:z,1:v}
@@ -259,8 +274,8 @@ class Env_stat():
 
         self.ret_v_disk.append(s.apply(lambda x:get_fe_nt_usage(cur,'disk',x['disk']) if choice==x['mid'] else 0,axis=1).values)
 
-        self.ret_v_p.append(s.apply(lambda x:get_fe_nt_usage(cur,'p',x['p']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_m.append(s.apply(lambda x:get_fe_nt_usage(cur,'m',x['m']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_p.append(s.apply(lambda x:get_fe_nt_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_m.append(s.apply(lambda x:get_fe_nt_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
         self.ret_v_pm.append(s.apply(lambda x:get_fe_nt_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
 
         self.ret_app_infer.append(s['mid'].apply(lambda x:self.app.aid[cur] if choice==x else '').values)
@@ -286,6 +301,43 @@ class Env_stat():
                 ,'pm':np.sum(self.ret_v_pm,0)
                 }
 
+    def update(self,cur,choice):
+        def get_usage(cur,key,res_total):
+            return self.unit[key][cur].astype(float)/res_total
+
+        s=self.mn.iloc[:][['mid','cpu','mem','disk','p','m','pm']]
+
+        self.ret_v_cpu.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_cpu_mean.append(s.apply(lambda x:get_usage(cur,'cm',1) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_mem.append(s.apply(lambda x:get_usage(cur,'m',x['mem']) if choice==x['mid'] else 0,axis=1).values)
+
+        self.ret_v_disk.append(s.apply(lambda x:get_usage(cur,'d',x['disk']) if choice==x['mid'] else 0,axis=1).values)
+
+        self.ret_v_p.append(s.apply(lambda x:get_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_m.append(s.apply(lambda x:get_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_pm.append(s.apply(lambda x:get_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
+
+        self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
+
+
+        if self.verbose==1:
+            threed_view(np.sum(self.ret_v_cpu,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_mem,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_disk,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_p,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_m,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_pm,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+        # df_machine['cpu_deploy'].sum(axis=1).plot()
+
+        return {'c':np.sum(self.ret_v_cpu,0)
+                ,'m':np.sum(self.ret_v_mem,0)
+                ,'a':np.sum(self.ret_app_infer,0)
+                ,'cm':np.sum(self.ret_v_cpu_mean,0)
+                ,'d':np.sum(self.ret_v_disk,0)
+                ,'p_pm':np.sum(self.ret_v_p,0)
+                ,'m_pm':np.sum(self.ret_v_m,0)
+                ,'pm':np.sum(self.ret_v_pm,0)
+                }
 
     def step_op(self,step):
         self.li_cpu.append(self.unit['c']*np.identity(APP_NUM)[step,:]*-1)
@@ -299,8 +351,10 @@ class Env_stat():
         def env_sum():
             return {
                    # 'cpu':self.pack_plot(self.env_cpu,axis=1,verbose=0)*self.mn.cpu,
-                   'c':self.pack_plot(self.deploy_state['c'],axis=1,verbose=0)*self.mn.cpu,
-                   'm':self.pack_plot(self.deploy_state['m'],axis=1,verbose=0)*self.mn.mem,
+                   # 'c':self.pack_plot_max(self.deploy_state['c'],axis=1,verbose=0)*self.mn.cpu,
+                   'c':self.deploy_state['c']*self.mn.cpu,
+                   # 'm':self.pack_plot_max(self.deploy_state['m'],axis=1,verbose=0)*self.mn.mem,
+                   'm':self.deploy_state['m']*self.mn.mem,
                    'd':self.deploy_state['d']*self.mn.disk,
                    'p_pm':self.deploy_state['p_pm']*self.mn.p,
                    'm_pm':self.deploy_state['m_pm']*self.mn.m,
