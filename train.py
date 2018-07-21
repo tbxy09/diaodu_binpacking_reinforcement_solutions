@@ -21,7 +21,7 @@ from preprocess import Preprocess
 from preprocess import en_vec
 from env_stat import Env_stat
 from keras.utils import Progbar
-from env_stat import MA_NUM,APP_NUM
+from env_stat import MA_NUM,APP_NUM,INST_NUM
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
@@ -32,6 +32,7 @@ parser.add_argument('--dump-interval', type=int, default=100, metavar='N',
                     help='interval between training status logs (default: 10)')
 parser.add_argument('--gamma', type=float, default=0.89, metavar='G',
                     help='discount factor (default: 0.99)')
+parser.add_argument('--non-roll', type=bool, default=True)
 args = parser.parse_args()
 print(args.gamma)
 
@@ -56,9 +57,12 @@ def dic_init(fn=None):
     if fn==None:
         dic['saved_log_probs']=[]
         dic['rewards'] =[]
-        dic['iid']=''
+        dic['iid']=pd.Series(np.array(['']*INST_NUM))
         dic['id_']=-1
-        dic['mid']=np.ones(MA_NUM)*-1
+        dic['mid']=pd.Series(np.ones(INST_NUM,dtype=int)*-1)
+        dic['aid']=pd.Series(np.array(['']*INST_NUM))
+        dic['im']={}
+        dic['ia']={}
     else:
         load(fn)
 
@@ -79,9 +83,9 @@ def save_checkpoints(rewards,log_probs,e,iid,id_):
     fn='policy{}.pth.tar'.format(e)
     # dic['saved_log_probs'].append(log_probs)
     # dic['rewards'].append(rewards)
-    # dic['env_dic']=env.dic
+    dic['env_dic']=env.dic
     dic['state_dict']=m.state_dict()
-    dic['iid']=iid
+    # dic['iid']=iid
     dic['id_']=id_
     # dic['policy_rewards']=[]
     # dic['policy_rewards'].append(policy_rewards)
@@ -136,12 +140,18 @@ def get_frame():
 def load(fn):
     ck=torch.load(fn)
     # env.matrix=ck['env_dic']['matrix']
-    dic['mid']=ck['mid']
+    dic['mid']=ck['mid'].copy()
     dic['id_']=ck['id_']
+    dic['aid']=ck['aid']
+    dic['iid']=ck['iid'].copy()
+    ck={}
+    dic['im']={i:m for i,m in zip(dic['iid'],dic['mid']) if i!=''}
+    dic['ia']={i:a for i,a in zip(dic['iid'],dic['aid']) if i!=''}
     # m.load_state_dict(ck['state_dict'])
 
 def train():
     print('train')
+    print('non_roll_mode:{}'.format(args.non_roll))
     bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
 
     log_rewards = []
@@ -149,10 +159,12 @@ def train():
     dic_init()
 
     loss_old=0
+
     for epoch in range(1000):
         m.logprob_history=[]
         m.rewards=[]
         env.reset()
+        # this is the place to load the policy checkpoint
         # load_checkpoints(fn)
         for id_,(iid,aid) in enumerate(env.i_a.items()):
         # foirwarding
@@ -165,19 +177,21 @@ def train():
             a=env.df_a_i.iloc[cur].cpu.split('|')
             assert pd.Series(a,dtype=float).max()==env.unit['c'][cur]
 
-            if log_mid==-1:
+            if log_mid==-1|args.non_roll:
                 not_quick_roll=1
                 mid=m(inp)
                 # digits=234
             #     print(digits)
                 # id_=digits.dot(torch.tensor([10**3,10**2,10,1]))
                 dic['mid'][id_]=mid
+                dic['aid'][id_]=aid
+                dic['iid'][id_]=iid
             ## into a quick_roll
             else:
                 print('in quick roll')
                 not_quick_roll=0
 
-                mid=dic['mid'][id_]
+                mid=dic['im'][iid]
 
             end=run_game(mid,cur,not_quick_roll)
             bar.update(id_)
@@ -186,7 +200,7 @@ def train():
                 assert env.deploy_state[each].shape==(MA_NUM,)
 
             e='_'.join([str(epoch),str(iid)])
-            if id_%args.dump_interval==0:
+            if id_%30==0:
                 save_checkpoints(log_rewards,log_saved,e,iid,id_)
 
             if end:
@@ -200,9 +214,9 @@ def train():
             R = r + args.gamma * R
             rewards.insert(0, R)
         rewards = torch.Tensor(rewards)
-        log_rewards.append(rewards)
+        log_rewards.append(rewards.data.numpy())
         rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-        log_rewards.append(rewards)
+        log_rewards.append(rewards,data.numpy())
     #     print('the overall reward{}'.format(rewards))
     #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
     #     print(rewards)
@@ -215,10 +229,10 @@ def train():
         log_saved.append(loss_li)
         optimizer.zero_grad()
         loss = torch.cat(loss_li).sum()
-        log_saved.append(loss)
-        if loss_old==loss:
-            print('loss stay the same')
-            torch.manual_seed(args.seed+100)
+        log_saved.append(loss.data.numpy())
+        # if loss_old==loss:
+            # print('loss stay the same')
+            # torch.manual_seed(args.seed+100)
             # m=Policy()
             # optimizer=Adam(m.parameters(),lr=0.015)
         loss_old=loss
@@ -234,43 +248,49 @@ def train():
 
 
 def quick_roll():
-    print('train')
+    print('quick_roll')
     bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
 
     log_rewards = []
     log_saved = []
+
     dic_init(args.fn)
 
     loss_old=0
+
     for epoch in range(1):
+
         m.logprob_history=[]
         m.rewards=[]
+
         env.reset()
+
         print(len(dic['mid']))
         # load_checkpoints(fn)
-        for id_,(iid,aid) in enumerate(env.i_a.items()):
+        # for id_,(iid,aid) in enumerate(env.i_a.items()):
+        for id_,(iid,aid) in enumerate(dic['ia'].items()):
         # foirwarding
-            log_mid=dic['mid'][id_+1]
-            inp=get_frame()
             # cur=env.app[app.aid==aid]
 
-            cur=env.a_idx[aid]
-
-            a=env.df_a_i.iloc[cur].cpu.split('|')
-            assert pd.Series(a,dtype=float).max()==env.unit['c'][cur]
-
-            if log_mid==-1:
+            if (aid+iid)=='':
                 break
-            ## into a quick_roll
             else:
+                cur=env.a_idx[aid]
+                a=env.df_a_i.iloc[cur].cpu.split('|')
+                assert pd.Series(a,dtype=float).max()==env.unit['c'][cur]
                 not_quick_roll=0
-
-                mid=dic['mid'][id_+1]
+                mid=dic['im'][iid]
 
             end=run_game(mid,cur,not_quick_roll)
-            show_mid=[['mid',mid.data.numpy()]]
+            # show_mid=[['mid',int(mid.data.numpy())]]
+            # show_mid+=[['iid',iid]]
+            # show_mid+=[['aid',aid]]
             bar.update(id_)
-load(args.fn)
+            print(iid,aid,mid)
+            if end:
+                break
+# load(args.fn)
 quick_roll()
 quick_roll_save()
+
 # train()

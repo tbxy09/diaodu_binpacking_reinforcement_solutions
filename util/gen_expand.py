@@ -35,6 +35,10 @@ def mmplot(env):
     for i,keys in zip(range(6),['cpu','mem','disk','p','m','pm']):
         print(i,keys)
         yield pd.Series(env.matrix[i][9339:9339+6000]/env.mn[keys]).plot()
+def dplot(env):
+    for i,keys in zip(range(6),['c','m','d','p_pm','m_pm','pm']):
+        print(i,keys)
+        yield pd.Series(env.deploy_state[keys]).plot()
 def numplot(env):
     pd.Series(env.a_i).plot()
 def unit_max(env):

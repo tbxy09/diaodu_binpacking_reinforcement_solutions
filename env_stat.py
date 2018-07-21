@@ -5,6 +5,7 @@ import gc
 
 MA_NUM=6000
 APP_NUM=9338
+INST_NUM=68219
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):
@@ -119,9 +120,11 @@ class Env_stat():
         # dic['policy_rewards'].append(policy_rewards)
         # dic['len'].append(len(self.rewards))
         torch.save(dic,fn)
+
     def clean4room(self):
         del self.app
         gc.collect()
+
     def load_checkpoints(self,dic):
         self.li_cpu=dic['li_cpu']
         self.li_mem=dic['li_mem']
@@ -135,12 +138,14 @@ class Env_stat():
         if verbose:
             p.plot()
         return v_
+
     def pack_plot_max(self,li,axis=0,verbose=0):
         v_=np.max(li,axis=axis)
         p=pd.Series(v_)
         if verbose:
             p.plot()
         return v_
+
     def reset(self):
         self.li_cpu=[]
         self.li_mem=[]
@@ -164,6 +169,10 @@ class Env_stat():
 #         pass
         import re
         def re_find(text):
+
+            p=re.compile('(\s+)')
+            text=p.sub(' ',text)
+
             for g,v in self.app_inter.groupby('aid') :
                 if re.findall(g,text):
                     for each in v.ab:
