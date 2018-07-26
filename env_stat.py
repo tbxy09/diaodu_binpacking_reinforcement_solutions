@@ -47,6 +47,22 @@ class Env_stat():
                     ,'m_pm':app['m'].astype(float).values
                     ,'pm':app['pm'].astype(float).values
                    }
+
+        def init_deploy_state():
+            def init_str():
+                    x=np.empty_like(np.zeros(shape=(MA_NUM,)),dtype='O')
+                    x.fill('')
+                    return x
+            return {'c':np.zeros(shape=(MA_NUM,))
+                    ,'m':np.zeros(shape=(MA_NUM,))
+                    ,'a':init_str()
+                    ,'d':np.zeros(shape=(MA_NUM,))
+                    ,'cm':np.zeros(shape=(MA_NUM,))
+                    ,'p_pm':np.zeros(shape=(MA_NUM,))
+                    ,'m_pm':np.zeros(shape=(MA_NUM,))
+                    ,'pm':np.zeros(shape=(MA_NUM,))
+                    }
+
         self.ret_v_cpu=[]
         self.ret_v_mem=[]
         self.ret_v_disk=[]
@@ -55,16 +71,7 @@ class Env_stat():
         self.ret_v_pm=[]
         self.ret_v_cpu_mean=[]
         self.ret_app_infer=[]
-        def init_deploy_state():
-            return {'c':np.zeros(shape=(MA_NUM,))
-                    ,'m':np.zeros(shape=(MA_NUM,))
-                    ,'a':np.zeros(shape=(MA_NUM,))
-                    ,'d':np.zeros(shape=(MA_NUM,))
-                    ,'cm':np.zeros(shape=(MA_NUM,))
-                    ,'p_pm':np.zeros(shape=(MA_NUM,))
-                    ,'m_pm':np.zeros(shape=(MA_NUM,))
-                    ,'pm':np.zeros(shape=(MA_NUM,))
-                    }
+
 
         self.deploy_state=init_deploy_state()
 
@@ -104,6 +111,7 @@ class Env_stat():
         self.li_m=[]
         self.li_pm=[]
         self.init_matrix()
+        self._not_quick_roll =0
 
         # used for log
         self.dic={}
@@ -111,15 +119,64 @@ class Env_stat():
         # self.matrix=np.zeros([])
         # self.ab=self.app_inter.groupby('aid').apply(lambda x:x.sort_values(by='v'))
 #         pass
+    def m(self, p_value):
+        if self._not_quick_roll!=p_value:
+            print(p_value)
+
+    @property
+    def not_quick_roll(self):
+        return self._not_quick_roll
+
+    @not_quick_roll.setter
+    def not_quick_roll(self, value):
+        self.m(value)
+        self._not_quick_roll = value
+
+    def init_deploy_state(self):
+        def init_str():
+                x=np.empty_like(np.zeros(shape=(MA_NUM,)),dtype='O')
+                x.fill('')
+                return x
+        return {'c':np.zeros(shape=(MA_NUM,))
+                ,'m':np.zeros(shape=(MA_NUM,))
+                ,'a':init_str()
+                ,'d':np.zeros(shape=(MA_NUM,))
+                ,'cm':np.zeros(shape=(MA_NUM,))
+                ,'p_pm':np.zeros(shape=(MA_NUM,))
+                ,'m_pm':np.zeros(shape=(MA_NUM,))
+                ,'pm':np.zeros(shape=(MA_NUM,))
+                }
+
+    def li_init(self):
+
+        self.li_cpu=[]
+        self.li_mem=[]
+        self.li_disk=[]
+        self.li_p=[]
+        self.li_m=[]
+        self.li_pm=[]
+
+    def ret_init(self):
+
+        self.ret_v_cpu=[]
+        self.ret_v_mem=[]
+        self.ret_v_disk=[]
+        self.ret_v_p=[]
+        self.ret_v_m=[]
+        self.ret_v_pm=[]
+        self.ret_v_cpu_mean=[]
+        self.ret_app_infer=[]
 
     def save_checkpoints(self):
-        fn='policy{}.pth.tar'.format(e)
-        dic['saved_log_probs'].append(log_probs)
-        dic['rewards'].append(rewards)
+        # fn='policy{}.pth.tar'.format(e)
+        # dic['saved_log_probs'].append(log_probs)
+        # dic['rewards'].append(rewards)
+        self.dic['matrix']=self.matrix
+        self.dic['deploy_state']=self.deploy_state
         # dic['policy_rewards']=[]
         # dic['policy_rewards'].append(policy_rewards)
         # dic['len'].append(len(self.rewards))
-        torch.save(dic,fn)
+        # torch.save(dic,fn)
 
     def clean4room(self):
         del self.app
@@ -147,13 +204,18 @@ class Env_stat():
         return v_
 
     def reset(self):
+        self.ret_init()
+
         self.li_cpu=[]
         self.li_mem=[]
-        self.ret_app_infer=[]
-        self.ret_v_cpu=[]
-        self.ret_v_mem=[]
-        self.dic={}
+        self.li_disk=[]
+        self.li_p=[]
+        self.li_m=[]
+        self.li_pm=[]
+
+        # self.dic={}
         self.init_matrix()
+        self.deploy_state=self.init_deploy_state()
 
     def dump(self):
 
@@ -181,6 +243,9 @@ class Env_stat():
                             return 1
             return 0
 
+        self.ret_init()
+        self.li_init()
+
         if choice>self.mn.shape[0]-1:
             # return self.env_cpu.sum(0).sum(0),1
             return 1,1
@@ -200,12 +265,13 @@ class Env_stat():
 
         self.env_matrix(cur)
 
-        self.dic['matrix']=self.matrix
-        self.dic['deploy_state']=self.deploy_state
+        # self.dic['matrix']=self.matrix
+        # self.dic['deploy_state']=self.deploy_state
 
         # if any(self.env_mem.max(1)>1):
         for k in  ['c','m','d','p_pm','m_pm','pm']:
             if any(self.deploy_state[k]>1):
+                print('\n')
                 print(k ,'end')
                 # return self.env_cpu.sum(0).sum(0),1
                 return 1,1
@@ -227,16 +293,16 @@ class Env_stat():
         # r=pd.Series(r).apply(lambda x: len(x)!=0)
         # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
 
-        end=re_find(text)
-
-        if end==1:
-            print('infer end')
-
+        if self.not_quick_roll==1:
+            end=re_find(text)
+            if end==1:
+                print('infer end')
+            return 1,end
         # if any(r)==True:
             # print('end')
 
         # return self.env_cpu.sum(0).sum(0),end
-        return 1,end
+        return 1,0
 
     def update_history(self,cur,choice):
 
@@ -310,7 +376,7 @@ class Env_stat():
                 ,'pm':np.sum(self.ret_v_pm,0)
                 }
 
-    def update(self,cur,choice):
+    def update_history2(self,cur,choice):
         def get_usage(cur,key,res_total):
             return self.unit[key][cur].astype(float)/res_total
 
@@ -348,13 +414,74 @@ class Env_stat():
                 ,'pm':np.sum(self.ret_v_pm,0)
                 }
 
+    def update(self,cur,choice):
+        def get_usage(cur,key,res_total):
+            return self.unit[key][cur].astype(float)/res_total
+
+        s=self.mn.iloc[:][['mid','cpu','mem','disk','p','m','pm']]
+
+        self.ret_v_cpu.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_cpu.append(self.deploy_state['c'])
+
+        self.ret_v_cpu_mean.append(s.apply(lambda x:get_usage(cur,'cm',1) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_cpu_mean.append(self.deploy_state['cm'])
+
+        self.ret_v_mem.append(s.apply(lambda x:get_usage(cur,'m',x['mem']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_mem.append(self.deploy_state['m'])
+
+        self.ret_v_disk.append(s.apply(lambda x:get_usage(cur,'d',x['disk']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_disk.append(self.deploy_state['d'])
+
+        self.ret_v_p.append(s.apply(lambda x:get_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_p.append(self.deploy_state['p_pm'])
+
+        self.ret_v_m.append(s.apply(lambda x:get_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_m.append(self.deploy_state['m_pm'])
+
+        self.ret_v_pm.append(s.apply(lambda x:get_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
+        self.ret_v_pm.append(self.deploy_state['pm'])
+
+        self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
+        self.ret_app_infer.append(self.deploy_state['a'])
+
+
+        if self.verbose==1:
+            threed_view(np.sum(self.ret_v_cpu,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_mem,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_disk,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_p,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_m,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_pm,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+        # df_machine['cpu_deploy'].sum(axis=1).plot()
+
+        return {'c':np.sum(self.ret_v_cpu,0)
+                ,'m':np.sum(self.ret_v_mem,0)
+                ,'a':np.sum(self.ret_app_infer,0)
+                ,'cm':np.sum(self.ret_v_cpu_mean,0)
+                ,'d':np.sum(self.ret_v_disk,0)
+                ,'p_pm':np.sum(self.ret_v_p,0)
+                ,'m_pm':np.sum(self.ret_v_m,0)
+                ,'pm':np.sum(self.ret_v_pm,0)
+                }
+
     def step_op(self,step):
         self.li_cpu.append(self.unit['c']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_cpu.append(self.matrix[0][:APP_NUM])
+
         self.li_mem.append(self.unit['m']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_mem.append(self.matrix[1][:APP_NUM])
+
         self.li_disk.append(self.unit['d']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_disk.append(self.matrix[2][:APP_NUM])
+
         self.li_p.append(self.unit['p_pm']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_p.append(self.matrix[3][:APP_NUM])
+
         self.li_m.append(self.unit['m_pm']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_m.append(self.matrix[4][:APP_NUM])
+
         self.li_pm.append(self.unit['pm']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_pm.append(self.matrix[5][:APP_NUM])
 
     def li_stack(self,verbose):
         def env_sum():
@@ -447,7 +574,7 @@ class Env_stat():
 
         self.step_op(step)
 
-        self.dump()
+        # self.dump()
 
         # cpu_ret=normalize(cpu_ret)
         # mem_ret=normalize(mem_ret)

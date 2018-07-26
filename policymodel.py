@@ -11,18 +11,28 @@ class Policy(nn.Module):
         self.bn1=nn.BatchNorm2d(16)
         self.conv2=nn.Conv2d(16,32,3)
         self.bn2=nn.BatchNorm2d(32)
-        mm1=nn.Conv2d(24,16,3)
+        mm1=nn.Conv2d(24,16,3,2)
+        mm1b=nn.Conv2d(4,16,3,2)
         bn1=nn.BatchNorm2d(16)
-        mm2=nn.Conv2d(16,32,3)
+        mm2=nn.Conv2d(16,32,3,2)
         bn2=nn.BatchNorm2d(32)
-        mm3=nn.Conv2d(32,64,3)
+        mm3=nn.Conv2d(32,64,3,2)
         bn3=nn.BatchNorm2d(64)
-        mm4=nn.Conv2d(64,128,3)
+        mm1c=nn.Conv2d(4,128,3,2)
+        mm4=nn.Conv2d(64,128,3,2)
         bn4=nn.BatchNorm2d(128)
+        mm5=nn.Conv2d(128,1,3,2)
+        # bn5=nn.BatchNorm2d(4)
+        # mm6=nn.Conv2d(64,16,3,2)
+        # bn6=nn.BatchNorm2d(16)
         self.fc1=nn.Linear(128,100)
         self.fc2=nn.Linear(28,6)
         self.fc3=nn.Linear(99,10)
+        self.fc4=nn.Linear(1248,1000)
         self.net=nn.Sequential(mm1,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
+        self.netb=nn.Sequential(mm1b,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
+        self.netc=nn.Sequential(mm1c,bn4,mm5)
+                                # ,mm5,bn5)
         # self.fc1 = nn.Linear(36, 125)
         # self.fc2 = nn.Linear(125,10)
         self.it = iter(self.parameters())
@@ -37,7 +47,7 @@ class Policy(nn.Module):
         self.logprob_history= []
         self.rewards=[]
 
-    def forward(self, x):
+    def forward_history(self, x):
         # Set initial states
 
         # inp=torch.tensor(env.matrix,dtype=torch.float).view(8,107,-1)
@@ -62,6 +72,20 @@ class Policy(nn.Module):
         # out= self.fc1(x)
         # out=F.relu(out)
         # Decode hidden state of last time step
+        # out = self.fc2(out)
+        o=F.softmax(o,dim=1)
+        self.o_=Categorical(o)
+        # out = F.log_softmax(out,dim=1)
+        return self.o_.sample()
+    def forward(self, x):
+        # Set initial states
+
+        # inp=torch.tensor(env.matrix,dtype=torch.float).view(8,107,-1)
+        # inp=torch.randn(20,8,50,100)
+        o=self.netc(x)
+        o=o.view(1,-1)
+        o=o.squeeze(1)
+        o=self.fc4(o)
         # out = self.fc2(out)
         o=F.softmax(o,dim=1)
         self.o_=Categorical(o)
