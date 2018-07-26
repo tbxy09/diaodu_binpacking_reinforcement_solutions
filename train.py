@@ -167,6 +167,7 @@ def load_checkpoints():
     # fn= ['policy2_inst_74916.pth.tar']
     # fn= ['policy2_inst_40927.pth.tar']
     fn= ['./bk/policy2_inst_21132.pth.tar']
+    # fn= ['policy2_inst_40927.pth.tar']
         # ,'./bk/policy5_inst_48614.pth.tar','./bk/policy7_inst_22575.pth.tar' ]
         # './bk/policy0.pth.tar']
     ck=torch.load(fn[0])
