@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import torch
 def gen_expand(gen,num):
     for i,(x,y) in enumerate(gen):
     #     print(i)
@@ -62,5 +63,39 @@ def elegant_stack():
     xn_li.append(xn)
     # xn=np.sum([xn ,np.sum(xn_li,axis=0)],axis=0)
     xn=np.sum(xn_li,axis=0)
+# %load -r 140-144 /opt/playground/diaodu/train.py
 
+def get_frame(env):
+    #     return torch.tensor(env.matrix,dtype=torch.float).view(24,107,-1)
+    return torch.tensor(env.matrix,dtype=torch.float).view(6,4,107,-1)
+        # return torch.randn(4,36)
 
+def mrun(env,m,inp):
+    loss_prob_li=[]
+    rewards=[]
+    o=m(inp)
+    # print(m.get_logprob(o),o)
+    # loss_prob_li.append(m.get_logrob(o))
+    # rewards=env.evaluate(o)
+
+def ck_parser(fn,m):
+    # ck=torch.load('./run/a/policy2_inst_43727.pth.tar')
+    ck=torch.load(fn)
+
+    # ck=torch.load('policy8.pth.tar')
+
+    # env_stat.matrix=ck['env_dic']['matrix']
+    # env_stat.deploy_state=ck['env_dic']['deploy_state']
+    # r=ck['rewards']
+    log_prob=ck['saved_log_probs']
+    mid=ck['mid']
+    iid=ck['iid']
+    # aid=ck['aid']
+    # id_=ck['id_']
+    state_dict=ck['state_dict']
+    m.load_state_dict(state_dict)
+    # env_dic=ck['env_dic']
+    print(len([mid[i] for i in range(68219) if mid[i]!=-1]))
+    print(len([iid[i] for i in range(68219) if mid[i]!=-1]))
+    [mid[i] for i in range(68219) if mid[i]!=-1]
+    return log_prob,[mid[i] for i in range(68219) if mid[i]!=-1], [iid[i] for i in range(68219) if iid[i]!='']

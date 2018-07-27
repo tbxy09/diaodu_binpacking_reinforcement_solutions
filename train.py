@@ -24,10 +24,12 @@ from keras.utils import Progbar
 from env_stat import MA_NUM,APP_NUM,INST_NUM
 from collections import OrderedDict
 from itertools import count
+import os
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
 parser.add_argument('--fn',type=str,default='')
+parser.add_argument('--run-id',type=str,default='')
 parser.add_argument('--log-interval', type=int, default=8, metavar='N',
                     help='interval between training status logs (default: 10)')
 parser.add_argument('--dump-interval', type=int, default=500, metavar='N',
@@ -85,8 +87,9 @@ def quick_roll_save(e='quick_roll'):
     # dic['policy_rewards'].append(policy_rewards)
     torch.save(dic,fn)
 
-def save_checkpoints(rewards,log_probs,e,iid,id_):
-    fn='policy{}.pth.tar'.format(e)
+def save_checkpoints(rewards,log_probs,e,iid,id_,run_id):
+    if run_id not in os.listdir('./run/'):os.mkdir('./run/'+run_id)
+    fn='./run/{0}/policy{1}.pth.tar'.format(run_id,e)
     dic['saved_log_probs']=log_probs
     dic['rewards']=rewards
     # dic['env_dic']=env.dic
@@ -139,7 +142,7 @@ def run_game(mid,step,not_quick_roll):
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)*rewards
 
 def get_frame():
-    return torch.tensor(env.matrix,dtype=torch.float).view(24,107,-1)
+    return torch.tensor(env.matrix,dtype=torch.float).view(6,4,107,-1)
     # return torch.randn(4,36)
 
 # m.save_logprob(2,2)
@@ -220,7 +223,7 @@ def train(m):
 
     loss_old=0
 
-    load_checkpoints()
+    # load_checkpoints()
     for epoch in count(1):
         m.logprob_history=[]
         m.rewards=[]
@@ -267,7 +270,7 @@ def train(m):
 
             e='_'.join([str(epoch),str(iid)])
             if id_%args.dump_interval==0:
-                save_checkpoints(m.rewards,m.logprob_history,e,iid,id_)
+                save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
 
             if end:
                 break
@@ -287,12 +290,13 @@ def train(m):
     #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
     #     print(rewards)
         loss_li=[]
-        log_saved.append(m.logprob_history)
+        # log_saved.append(m.logprob_history.data.numpy())
+        log_saved.append(torch.cat(m.logprob_history).data.numpy())
         for log_prob,r in zip(m.logprob_history,rewards):
             loss_li.append(-log_prob*r)
     #     print(m.logprob_history)
     #     print(loss_li)
-        log_saved.append(loss_li)
+        log_saved.append(torch.cat(loss_li).data.numpy())
         optimizer.zero_grad()
         loss = torch.cat(loss_li).sum()
         log_saved.append(loss.data.numpy())
@@ -303,7 +307,10 @@ def train(m):
             # optimizer=Adam(m.parameters(),lr=0.015)
         loss_old=loss
         if epoch%args.log_interval==0:
-            save_checkpoints(log_rewards,log_saved,epoch,0,0)
+            save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+        if id_<10:
+            print('makeup loss')
+            loss=loss+0.02
         print('\n---------------------------')
         print(loss)
         print('---------------------------')
