@@ -73,7 +73,7 @@ def get_frame(env):
 def mrun(env,m,inp):
     loss_prob_li=[]
     rewards=[]
-    o=m(inp)
+    o=m.netc(inp)
     # print(m.get_logprob(o),o)
     # loss_prob_li.append(m.get_logrob(o))
     # rewards=env.evaluate(o)

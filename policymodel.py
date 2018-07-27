@@ -3,6 +3,12 @@ from torch.distributions import Categorical
 import torch.nn as nn
 import torch.nn.functional as F
 # inp=torch.empty(size=(3,1),dtype=torch.float)
+
+def conv3x3(in_planes, out_planes, stride=1):
+    """3x3 convolution with padding"""
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+                     padding=1, bias=False)
+
 class Policy(nn.Module):
 
     def __init__(self):
@@ -18,20 +24,27 @@ class Policy(nn.Module):
         # bn2=nn.BatchNorm2d(32)
         # mm3=nn.Conv2d(32,64,3,2)
         # bn3=nn.BatchNorm2d(64)
-        mm1c=nn.Conv2d(4,128,3,2)
+        # self.mm1c=nn.Conv2d(4,128,3,3)
+
+        self.mm1c = nn.Conv2d(4,128,kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        # self.mm1c=conv3x3(4,128,3)
+
         # mm4=nn.Conv2d(64,128,3,2)
-        bn4=nn.BatchNorm2d(128)
-        mm5=nn.Conv2d(128,1,3,2)
-        # bn5=nn.BatchNorm2d(4)
+        self.bn4=nn.BatchNorm2d(128)
+        self.mm5=conv3x3(128,4,2)
+        self.bn5=nn.BatchNorm2d(4)
         # mm6=nn.Conv2d(64,16,3,2)
         # bn6=nn.BatchNorm2d(16)
         # self.fc1=nn.Linear(128,100)
         # self.fc2=nn.Linear(28,6)
         # self.fc3=nn.Linear(99,10)
-        self.fc4=nn.Linear(1248,1000)
+        # self.fc4=nn.Linear(1248,1000)
+        self.fc4=nn.Linear(5832,1000)
+        self.relu = nn.ReLU(inplace=True)
         # self.net=nn.Sequential(mm1,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
         # self.netb=nn.Sequential(mm1b,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
-        self.netc=nn.Sequential(mm1c,bn4,mm5)
+        # self.netc=nn.Sequential(mm1c,bn4,mm5)
                                 # ,mm5,bn5)
         # self.fc1 = nn.Linear(36, 125)
         # self.fc2 = nn.Linear(125,10)
@@ -77,12 +90,36 @@ class Policy(nn.Module):
         self.o_=Categorical(o)
         # out = F.log_softmax(out,dim=1)
         return self.o_.sample()
+
+    def block1(self,x):
+        o = self.mm1c(x)
+        o = self.bn4(o)
+        o = self.relu(o)
+        return o
+
+    def block2(self,x):
+        o = self.mm5(x)
+        o = self.bn5(o)
+        o = self.relu(o)
+        return o
+
     def forward(self, x):
+        residual=x
         # Set initial states
 
         # inp=torch.tensor(env.matrix,dtype=torch.float).view(8,107,-1)
         # inp=torch.randn(20,8,50,100)
-        o=self.netc(x)
+        # o=self.net(x)
+        o = self.mm1c(x)
+        o = self.bn4(o)
+        o = self.relu(o)
+
+        o = self.mm5(o)
+        o = self.bn5(o)
+
+        # o += residual
+        o = self.relu(o)
+
         o=o.view(1,-1)
         o=o.squeeze(1)
         o=self.fc4(o)
@@ -99,6 +136,12 @@ class Policy(nn.Module):
     def save_logprob(self,loss,reward):
         self.logprob_history.append(loss)
         self.rewards.append(reward)
+
+class PolicyX(Policy):
+
+    def __init__(self,p_dic):
+        super(PolicyX,self).__init__()
+        self.weight_action(init='dict',p_dic=p_dic)
 
     def expand(self):
         [print("id:{},{}".format(id_,each.shape)) for id_,each in self.state_dict().items()]
