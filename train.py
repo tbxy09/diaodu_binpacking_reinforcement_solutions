@@ -9,10 +9,10 @@ import gc
 from funtest.test_pathlib import first_try
 import matplotlib.pyplot as plt
 import numpy as np
-sys.path.append('/opt/playground/diaodu/')
+sys.path.append('./')
 from dst import *
 from model import *
-sys.path.append('/opt/playground/diaodu/util')
+sys.path.append('./util')
 from gen_expand import *
 from threed_view import *
 from meter import AverageMeter
@@ -55,8 +55,11 @@ gc.collect()
 from policymodel import Policy
 m=Policy()
 # m.weight_action(init='normal')
-optimizer=optim.Adam(m.parameters(),lr=0.02)
+optimizer=optim.Adam(m.parameters(),lr=0.01)
 dic={}
+
+use_cuda = torch.cuda.is_available()
+
 def dic_init(fn=None):
     if fn==None:
         dic['saved_log_probs']=[]
@@ -147,7 +150,7 @@ def get_frame():
 
 # m.save_logprob(2,2)
 def load(fn):
-    ck=torch.load(fn[0])
+    ck=torch.load(fn)
     # env.matrix=ck['env_dic']['matrix']
     dic['mid']=ck['mid'].copy()
     dic['id_']=ck['id_']
@@ -170,6 +173,7 @@ def load_checkpoints():
     # fn= ['policy2_inst_74916.pth.tar']
     # fn= ['policy2_inst_40927.pth.tar']
     fn= ['./bk/policy2_inst_21132.pth.tar']
+    fn= ['./run/k/policy1_inst_61285.pth.tar']
     # fn= ['policy2_inst_40927.pth.tar']
         # ,'./bk/policy5_inst_48614.pth.tar','./bk/policy7_inst_22575.pth.tar' ]
         # './bk/policy0.pth.tar']
@@ -225,15 +229,17 @@ def train(m):
 
     # load_checkpoints()
     for epoch in count(1):
-        m.logprob_history=[]
-        m.rewards=[]
+        # m.logprob_history=[]
+        # m.rewards=[]
         env.reset()
         # this is the place to load the policy checkpoint
         # load_checkpoints(fn)
 
-        # load_checkpoints()
+        load_checkpoints()
 
         for id_,(iid,mid) in enumerate(dic['im'].items()):
+            if id_==0:
+                print(iid)
         # foirwarding
             # mid=dic['im'][iid]
             inp=get_frame()
@@ -275,50 +281,53 @@ def train(m):
             if end:
                 break
     #     print('---------------------------')
-        rewards = []
-        # log_rewards = []
-        # log_saved = []
-        R=0
-        for r in m.rewards[::-1]:
-            R = r + args.gamma * R
-            rewards.insert(0, R)
-        rewards = torch.Tensor(rewards)
-        log_rewards.append(rewards.data.numpy())
-        rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-        log_rewards.append(rewards.data.numpy())
-    #     print('the overall reward{}'.format(rewards))
-    #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-    #     print(rewards)
-        loss_li=[]
-        # log_saved.append(m.logprob_history.data.numpy())
-        log_saved.append(torch.cat(m.logprob_history).data.numpy())
-        for log_prob,r in zip(m.logprob_history,rewards):
-            loss_li.append(-log_prob*r)
-    #     print(m.logprob_history)
-    #     print(loss_li)
-        log_saved.append(torch.cat(loss_li).data.numpy())
-        optimizer.zero_grad()
-        loss = torch.cat(loss_li).sum()
-        log_saved.append(loss.data.numpy())
-        # if loss_old==loss:
-            # print('loss stay the same')
-            # torch.manual_seed(args.seed+100)
-            # m=Policy()
-            # optimizer=Adam(m.parameters(),lr=0.015)
-        loss_old=loss
-        if epoch%args.log_interval==0:
-            save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
-        if id_<10:
-            print('makeup loss')
-            loss=loss+0.02
-        print('\n---------------------------')
-        print(loss)
-        print('---------------------------')
-        loss.backward()
-        optimizer.step()
-        del m.logprob_history[:]
-        del m.rewards[:]
-        dic_init()
+        if epoch%1==0:
+
+            rewards = []
+            # log_rewards = []
+            # log_saved = []
+            R=0
+            for r in m.rewards[::-1]:
+                R = r + args.gamma * R
+                rewards.insert(0, R)
+            rewards = torch.Tensor(rewards)
+            log_rewards.append(rewards.data.numpy())
+            rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
+            print('\nrewards:'.format(rewards))
+            rewards = rewards/10
+            print('\nrewards:'.format(rewards))
+            log_rewards.append(rewards.data.numpy())
+        #     print('the overall reward{}'.format(rewards))
+        #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
+        #     print(rewards)
+            loss_li=[]
+            # log_saved.append(m.logprob_history.data.numpy())
+            log_saved.append(torch.cat(m.logprob_history).data.numpy())
+            for log_prob,r in zip(m.logprob_history,rewards):
+                loss_li.append(-log_prob*r)
+        #     print(m.logprob_history)
+        #     print(loss_li)
+            log_saved.append(torch.cat(loss_li).data.numpy())
+            loss = torch.cat(loss_li).sum()
+            log_saved.append(loss.data.numpy())
+            # if loss_old==loss:
+                # print('loss stay the same')
+                # torch.manual_seed(args.seed+100)
+                # m=Policy()
+                # optimizer=Adam(m.parameters(),lr=0.015)
+            # if epoch%args.log_interval==0:
+            if epoch%1==0:
+                save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+            print('\n---------------------------')
+            print(loss)
+            print('---------------------------')
+            if epoch%1==0:
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                del m.logprob_history[:]
+                del m.rewards[:]
+                dic_init()
 
 
 def quick_roll():
@@ -364,6 +373,9 @@ def quick_roll():
                 break
 # load(args.fn)
 import torch.multiprocessing as mp
+if use_cuda:
+    m=m.cuda()
+    env.matrix=env.matrix.cuda()
 if args.non_roll:
     train(m)
 #     if __name__ == '__main__':

@@ -62,7 +62,7 @@ class Env_stat():
                     ,'m_pm':np.zeros(shape=(MA_NUM,))
                     ,'pm':np.zeros(shape=(MA_NUM,))
                     }
-
+        self.n=0
         self.ret_v_cpu=[]
         self.ret_v_mem=[]
         self.ret_v_disk=[]
@@ -250,7 +250,10 @@ class Env_stat():
             # return self.env_cpu.sum(0).sum(0),1
             return 1,1
 
-        choice=self.mn.mid[choice]
+        self.n=(self.n+choice)%MA_NUM
+        # print('\n')
+        # print(self.n,choice)
+        choice=self.mn.mid[self.n]
 
         # self.env_cpu,self.env_mem,self.env_app,env_cpu_abs,env_mem_abs,self.env_disk=self.update(cur,choice)
 

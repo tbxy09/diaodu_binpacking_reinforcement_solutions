@@ -40,7 +40,7 @@ class Policy(nn.Module):
         # self.fc2=nn.Linear(28,6)
         # self.fc3=nn.Linear(99,10)
         # self.fc4=nn.Linear(1248,1000)
-        self.fc4=nn.Linear(5832,1000)
+        self.fc4=nn.Linear(5832,6000)
         self.relu = nn.ReLU(inplace=True)
         # self.net=nn.Sequential(mm1,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
         # self.netb=nn.Sequential(mm1b,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
@@ -55,7 +55,7 @@ class Policy(nn.Module):
         # self.h0 = torch.randn(self.num_layers, x.size(0), self.hidden_size)
         # self.c0 = torch.randn(self.num_layers, x.size(0), self.hidden_size)
 
-    def reset():
+    def reset(self):
         self.dic={}
         self.logprob_history= []
         self.rewards=[]
@@ -123,6 +123,7 @@ class Policy(nn.Module):
         o=o.view(1,-1)
         o=o.squeeze(1)
         o=self.fc4(o)
+        o = self.relu(o)
         # out = self.fc2(out)
         o=F.softmax(o,dim=1)
         self.o_=Categorical(o)
