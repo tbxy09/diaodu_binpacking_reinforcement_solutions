@@ -25,6 +25,7 @@ from env_stat import MA_NUM,APP_NUM,INST_NUM
 from collections import OrderedDict
 from itertools import count
 import os
+import ipdb
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
@@ -141,7 +142,7 @@ def run_game(mid,step,not_quick_roll):
             # ret_=ret_+each
 
     #     print(ret_)
-        m.save_logprob(loss,reward)
+        # m.save_logprob(loss,reward)
     return end
 
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)*rewards
@@ -167,6 +168,7 @@ def load(fn):
     # m.load_state_dict(ck['state_dict'])
 
 def load_checkpoints():
+    print('load_checkpoints')
     def op_(i,a,key):
         dic[key][i]=a
     # fn=['./bk/policy0_inst_61107.pth.tar',
@@ -242,10 +244,14 @@ def train(m):
         for id_,(iid,mid) in enumerate(dic['im'].items()):
             if id_==0:
                 print(iid)
+
+            if id_==500:
+                ipdb.set_trace()
         # foirwarding
             # mid=dic['im'][iid]
             inp=get_frame()
-            inp=inp.cuda()
+            if use_cuda:
+                inp=inp.cuda()
             # cur=env.app[app.aid==aid]
             aid=env.i_a[iid]
 
@@ -259,6 +265,7 @@ def train(m):
                 env.not_quick_roll=1
                 env.not_quick_roll=1
                 mid=m(inp)
+                # mid=torch.randint(6000,size=(1,))
                 mid=mid.data[0]
                 # digits=234
             #     print(digits)
@@ -275,8 +282,8 @@ def train(m):
             end=run_game(mid,cur,env.not_quick_roll)
             bar.update(id_)
 
-            for each in ['c','m','d','p_pm','m_pm','pm','cm','a']:
-                assert env.deploy_state[each].shape==(MA_NUM,)
+            # for each in ['c','m','d','p_pm','m_pm','pm','cm','a']:
+                # assert env.deploy_state[each].shape==(MA_NUM,)
 
             e='_'.join([str(epoch),str(iid)])
             if id_%args.dump_interval==0:
@@ -288,6 +295,7 @@ def train(m):
         if epoch%1==0:
 
             rewards = []
+            ipdb.set_trace()
             # log_rewards = []
             # log_saved = []
             R=0
