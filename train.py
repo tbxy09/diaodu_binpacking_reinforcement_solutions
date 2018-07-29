@@ -29,6 +29,7 @@ import os
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
 parser.add_argument('--fn',type=str,default='')
+parser.add_argument('--use-cache',type=int,default=1)
 parser.add_argument('--run-id',type=str,default='')
 parser.add_argument('--log-interval', type=int, default=8, metavar='N',
                     help='interval between training status logs (default: 10)')
@@ -74,7 +75,8 @@ def dic_init(fn=None):
         [op_(i,m,'im')for i,m in zip(dic['iid'],dic['mid']) if i!='']
         dic['im']=OrderedDict(sorted(dic['im'].items(), key=lambda t: t[1],reverse=True))
     else:
-        load(fn)
+        # load(fn)
+        load_checkpoints()
 
     # m=Policy()
     # optimizer=optim.Adam(m.parameters(),lr=0.2)
@@ -173,7 +175,7 @@ def load_checkpoints():
     # fn= ['policy2_inst_74916.pth.tar']
     # fn= ['policy2_inst_40927.pth.tar']
     fn= ['./bk/policy2_inst_21132.pth.tar']
-    fn= ['./run/k/policy1_inst_61285.pth.tar']
+    fn= ['./run/k/policy1_inst_61285.pth.tar','./run/l/policy1.pth.tar']
     # fn= ['policy2_inst_40927.pth.tar']
         # ,'./bk/policy5_inst_48614.pth.tar','./bk/policy7_inst_22575.pth.tar' ]
         # './bk/policy0.pth.tar']
@@ -227,15 +229,15 @@ def train(m):
 
     loss_old=0
 
-    # load_checkpoints()
+    if args.use_cache:
+
+        load_checkpoints()
+
     for epoch in count(1):
         # m.logprob_history=[]
         # m.rewards=[]
         env.reset()
         # this is the place to load the policy checkpoint
-        # load_checkpoints(fn)
-
-        load_checkpoints()
 
         for id_,(iid,mid) in enumerate(dic['im'].items()):
             if id_==0:
@@ -256,6 +258,7 @@ def train(m):
                 env.not_quick_roll=1
                 env.not_quick_roll=1
                 mid=m(inp)
+                mid=mid.data[0]
                 # digits=234
             #     print(digits)
                 # id_=digits.dot(torch.tensor([10**3,10**2,10,1]))
@@ -293,9 +296,9 @@ def train(m):
             rewards = torch.Tensor(rewards)
             log_rewards.append(rewards.data.numpy())
             rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-            print('\nrewards:'.format(rewards))
+            print('\nrewards:{}'.format(rewards))
             rewards = rewards/10
-            print('\nrewards:'.format(rewards))
+            print('\nrewards:{}'.format(rewards))
             log_rewards.append(rewards.data.numpy())
         #     print('the overall reward{}'.format(rewards))
         #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
@@ -351,18 +354,20 @@ def quick_roll():
         print(len(dic['mid']))
         # load_checkpoints(fn)
         # for id_,(iid,aid) in enumerate(env.i_a.items()):
-        for id_,(iid,aid) in enumerate(dic['ia'].items()):
+        for id_,(iid,mid) in enumerate(dic['im'].items()):
         # foirwarding
             # cur=env.app[app.aid==aid]
 
-            if (aid+iid)=='':
+            # if (aid+iid)=='':
+            if mid==-1:
                 break
             else:
+                aid=env.i_a[iid]
                 cur=env.a_idx[aid]
                 a=env.df_a_i.iloc[cur].cpu.split('|')
                 assert pd.Series(a,dtype=float).max()==env.unit['c'][cur]
                 not_quick_roll=0
-                mid=dic['im'][iid]
+                # mid=dic['im'][iid]
 
             end=run_game(mid,cur,not_quick_roll)
             # show_mid=[['mid',int(mid.data.numpy())]]

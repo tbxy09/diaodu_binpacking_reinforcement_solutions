@@ -78,18 +78,20 @@ def mrun(env,m,inp):
     # loss_prob_li.append(m.get_logrob(o))
     # rewards=env.evaluate(o)
 
-def ck_parser(fn,m):
+def ck_parser(fn,m,env_stat=None):
     # ck=torch.load('./run/a/policy2_inst_43727.pth.tar')
     ck=torch.load(fn)
 
     # ck=torch.load('policy8.pth.tar')
 
-    # env_stat.matrix=ck['env_dic']['matrix']
-    # env_stat.deploy_state=ck['env_dic']['deploy_state']
     # r=ck['rewards']
     log_prob=ck['saved_log_probs']
     mid=ck['mid']
     iid=ck['iid']
+    if env_stat:
+        env_stat.matrix=ck['env_dic']['matrix']
+        env_stat.deploy_state=ck['env_dic']['deploy_state']
+        return log_prob,[mid[i] for i in range(68219) if mid[i]!=-1], [iid[i] for i in range(68219) if iid[i]!='']
     # aid=ck['aid']
     # id_=ck['id_']
     state_dict=ck['state_dict']
@@ -99,3 +101,4 @@ def ck_parser(fn,m):
     print(len([iid[i] for i in range(68219) if mid[i]!=-1]))
     [mid[i] for i in range(68219) if mid[i]!=-1]
     return log_prob,[mid[i] for i in range(68219) if mid[i]!=-1], [iid[i] for i in range(68219) if iid[i]!='']
+
