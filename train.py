@@ -29,7 +29,7 @@ import os
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
 parser.add_argument('--fn',type=str,default='')
-parser.add_argument('--use-cache',type=int,default=1)
+parser.add_argument('--use-cache',type=int,default=0)
 parser.add_argument('--run-id',type=str,default='')
 parser.add_argument('--log-interval', type=int, default=8, metavar='N',
                     help='interval between training status logs (default: 10)')
@@ -135,13 +135,13 @@ def run_game(mid,step,not_quick_roll):
         loss=m.get_logprob(mid)
         # print(loss)
 
-        ret_=torch.tensor([0],dtype=torch.float)
+        # ret_=torch.tensor([0],dtype=torch.float)
 
-        for each in loss:
-            ret_=ret_+each
+        # for each in loss:
+            # ret_=ret_+each
 
     #     print(ret_)
-        m.save_logprob(ret_,reward)
+        m.save_logprob(loss,reward)
     return end
 
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)*rewards
@@ -245,6 +245,7 @@ def train(m):
         # foirwarding
             # mid=dic['im'][iid]
             inp=get_frame()
+            inp=inp.cuda()
             # cur=env.app[app.aid==aid]
             aid=env.i_a[iid]
 
@@ -380,7 +381,6 @@ def quick_roll():
 import torch.multiprocessing as mp
 if use_cuda:
     m=m.cuda()
-    env.matrix=env.matrix.cuda()
 if args.non_roll:
     train(m)
 #     if __name__ == '__main__':
