@@ -270,7 +270,7 @@ class Env_stat():
 
         # self.env_cpu,self.env_mem,self.env_app,env_cpu_abs,env_mem_abs,self.env_disk=self.update(cur,choice)
 
-        self.deploy_state=self.update(cur,choice)
+        self.deploy_state=self.update(cur,choice,self.n)
 
 #         if any(self.update(cur,choice).max(0)>threshold):
 
@@ -290,7 +290,7 @@ class Env_stat():
                 print('\n')
                 print(k ,'end')
                 # return self.env_cpu.sum(0).sum(0),1
-                # return 1,1
+                return 1,1
 
         # for k in  ['c','m']:
         #     if any(self.deploy_state[k].max(1)>1):
@@ -313,17 +313,11 @@ class Env_stat():
             end=re_find(text)
             if end==1:
                 print('infer end')
-            # return 1,end
+            return 1,end
         # if any(r)==True:
             # print('end')
 
         # return self.env_cpu.sum(0).sum(0),end
-        a=np.ones(17000)
-        b=np.zeros(17000)
-        b[-1]=1
-
-        self.i=self.i+1
-        return a[self.i-1],b[self.i-1]
         return 1,0
 
     def update_history(self,cur,choice):
