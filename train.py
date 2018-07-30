@@ -77,7 +77,7 @@ def dic_init(fn=None):
         dic['im']=OrderedDict(sorted(dic['im'].items(), key=lambda t: t[1],reverse=True))
     else:
         # load(fn)
-        load_checkpoints()
+        load_checkpoints(fn)
 
     # m=Policy()
     # optimizer=optim.Adam(m.parameters(),lr=0.2)
@@ -94,8 +94,8 @@ def quick_roll_save(e='quick_roll'):
     torch.save(dic,fn)
 
 def save_checkpoints(rewards,log_probs,e,iid,id_,run_id):
-    if run_id not in os.listdir('./run/'):os.mkdir('./run/'+run_id)
-    fn='./run/{0}/policy{1}.pth.tar'.format(run_id,e)
+    if run_id not in os.listdir('/data2/run/'):os.mkdir('/data2/run/'+run_id)
+    fn='/data2/run/{0}/policy{1}.pth.tar'.format(run_id,e)
     dic['saved_log_probs']=log_probs
     dic['rewards']=rewards
     # dic['env_dic']=env.dic
@@ -142,7 +142,7 @@ def run_game(mid,step,not_quick_roll):
             # ret_=ret_+each
 
     #     print(ret_)
-        # m.save_logprob(loss,reward)
+        m.save_logprob(loss,reward)
     return end
 
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)*rewards
@@ -167,7 +167,7 @@ def load(fn):
     # [dic['ia'][i]=a for i,a in env.i_a.items() if i not in dic['iid']]
     # m.load_state_dict(ck['state_dict'])
 
-def load_checkpoints():
+def load_checkpoints(fn):
     print('load_checkpoints')
     def op_(i,a,key):
         dic[key][i]=a
@@ -176,8 +176,12 @@ def load_checkpoints():
     # fn= ['policy2_inst_70527.pth.tar']
     # fn= ['policy2_inst_74916.pth.tar']
     # fn= ['policy2_inst_40927.pth.tar']
-    fn= ['./bk/policy2_inst_21132.pth.tar']
-    fn= ['./run/k/policy1_inst_61285.pth.tar','./run/l/policy1.pth.tar']
+    if fn==None:
+        fn= ['./bk/policy2_inst_21132.pth.tar']
+        fn= ['./run/k/policy1_inst_61285.pth.tar','./run/l/policy1.pth.tar']
+    else:
+        fn=[fn]
+
     # fn= ['policy2_inst_40927.pth.tar']
         # ,'./bk/policy5_inst_48614.pth.tar','./bk/policy7_inst_22575.pth.tar' ]
         # './bk/policy0.pth.tar']
@@ -245,8 +249,8 @@ def train(m):
             if id_==0:
                 print(iid)
 
-            if id_==500:
-                ipdb.set_trace()
+            # if id_==500:
+                # ipdb.set_trace()
         # foirwarding
             # mid=dic['im'][iid]
             inp=get_frame()
@@ -295,7 +299,7 @@ def train(m):
         if epoch%1==0:
 
             rewards = []
-            ipdb.set_trace()
+            # ipdb.set_trace()
             # log_rewards = []
             # log_saved = []
             R=0
@@ -305,9 +309,9 @@ def train(m):
             rewards = torch.Tensor(rewards)
             log_rewards.append(rewards.data.numpy())
             rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-            print('\nrewards:{}'.format(rewards))
+            # print('\nrewards:{}'.format(rewards))
             rewards = rewards/10
-            print('\nrewards:{}'.format(rewards))
+            # print('\nrewards:{}'.format(rewards))
             log_rewards.append(rewards.data.numpy())
         #     print('the overall reward{}'.format(rewards))
         #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))

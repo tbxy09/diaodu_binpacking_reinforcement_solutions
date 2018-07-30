@@ -158,7 +158,6 @@ class Env_stat():
 
     def ret_init(self):
 
-        self.n=0
         self.ret_v_cpu=[]
         self.ret_v_mem=[]
         self.ret_v_disk=[]
@@ -207,6 +206,7 @@ class Env_stat():
     def reset(self):
         self.ret_init()
 
+        self.n=0
         self.li_cpu=[]
         self.li_mem=[]
         self.li_disk=[]
