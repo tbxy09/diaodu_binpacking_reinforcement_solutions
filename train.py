@@ -29,6 +29,7 @@ import ipdb
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
+parser.add_argument('--verbose',type=int,default=1)
 parser.add_argument('--fn',type=str,default='')
 parser.add_argument('--use-cache',type=int,default=0)
 parser.add_argument('--run-id',type=str,default='')
@@ -40,6 +41,7 @@ parser.add_argument('--gamma', type=float, default=0.89, metavar='G',
                     help='discount factor (default: 0.99)')
 parser.add_argument('--non-roll', type=int, default=1,metavar='N')
 args = parser.parse_args()
+verbose=args.verbose
 print(args.gamma)
 
 print('train')
@@ -249,8 +251,9 @@ def train(m):
             if id_==0:
                 print(iid)
 
-            # if id_==500:
-                # ipdb.set_trace()
+            if epoch==3:
+                if id_==300:
+                    ipdb.set_trace()
         # foirwarding
             # mid=dic['im'][iid]
             inp=get_frame()
@@ -290,8 +293,9 @@ def train(m):
                 # assert env.deploy_state[each].shape==(MA_NUM,)
 
             e='_'.join([str(epoch),str(iid)])
-            if id_%args.dump_interval==0:
-                save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
+            if verbose:
+                if vid_%args.dump_interval==0:
+                    save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
 
             if end:
                 break
@@ -332,8 +336,9 @@ def train(m):
                 # m=Policy()
                 # optimizer=Adam(m.parameters(),lr=0.015)
             # if epoch%args.log_interval==0:
-            if epoch%1==0:
-                save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+            if verbose:
+                if epoch%1==0:
+                    save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
             print('\n---------------------------')
             print(loss)
             print('---------------------------')
