@@ -29,7 +29,7 @@ import ipdb
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
-parser.add_argument('--verbose',type=int,default=1)
+parser.add_argument('--verbose',type=int,default=0)
 parser.add_argument('--fn',type=str,default='')
 parser.add_argument('--use-cache',type=int,default=0)
 parser.add_argument('--run-id',type=str,default='')
@@ -228,7 +228,7 @@ def load_checkpoints(fn):
 def train(m):
     print('train')
     print('non_roll_mode:{}'.format(args.non_roll))
-    bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
+    # bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
 
     log_rewards = []
     log_saved = []
@@ -247,13 +247,16 @@ def train(m):
         env.reset()
         # this is the place to load the policy checkpoint
 
+        bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
+
         for id_,(iid,mid) in enumerate(dic['im'].items()):
             if id_==0:
                 print(iid)
 
             if epoch==3:
                 if id_==300:
-                    ipdb.set_trace()
+                    # ipdb.set_trace()
+                    pass
         # foirwarding
             # mid=dic['im'][iid]
             inp=get_frame()
@@ -294,7 +297,7 @@ def train(m):
 
             e='_'.join([str(epoch),str(iid)])
             if verbose:
-                if vid_%args.dump_interval==0:
+                if id_%args.dump_interval==0:
                     save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
 
             if end:

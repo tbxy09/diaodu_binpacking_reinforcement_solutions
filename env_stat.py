@@ -63,6 +63,7 @@ class Env_stat():
                     ,'pm':np.zeros(shape=(MA_NUM,))
                     }
         self.n=0
+        self.i=0
         self.ret_v_cpu=[]
         self.ret_v_mem=[]
         self.ret_v_disk=[]
@@ -119,6 +120,9 @@ class Env_stat():
         # self.matrix=np.zeros([])
         # self.ab=self.app_inter.groupby('aid').apply(lambda x:x.sort_values(by='v'))
 #         pass
+        self.mn_identity={each:np.identity(MA_NUM)*(1/(self.mn[each].values + np.finfo(np.float32).eps)) for each in ['cpu','mem','disk','p','m','pm']}
+        self.mn_identity['cm']=np.identity(MA_NUM)
+
     def m(self, p_value):
         if self._not_quick_roll!=p_value:
             print(p_value)
@@ -207,6 +211,7 @@ class Env_stat():
         self.ret_init()
 
         self.n=0
+        self.i=0
         self.li_cpu=[]
         self.li_mem=[]
         self.li_disk=[]
@@ -247,6 +252,13 @@ class Env_stat():
         self.ret_init()
         self.li_init()
 
+        # a=np.ones(250)
+        # b=np.zeros(250)
+        # b[-1]=1
+
+        # self.i=self.i+1
+        # return a[self.i-1],b[self.i-1]
+
         if choice>self.mn.shape[0]-1:
             # return self.env_cpu.sum(0).sum(0),1
             return 1,1
@@ -278,7 +290,7 @@ class Env_stat():
                 print('\n')
                 print(k ,'end')
                 # return self.env_cpu.sum(0).sum(0),1
-                return 1,1
+                # return 1,1
 
         # for k in  ['c','m']:
         #     if any(self.deploy_state[k].max(1)>1):
@@ -301,11 +313,17 @@ class Env_stat():
             end=re_find(text)
             if end==1:
                 print('infer end')
-            return 1,end
+            # return 1,end
         # if any(r)==True:
             # print('end')
 
         # return self.env_cpu.sum(0).sum(0),end
+        a=np.ones(17000)
+        b=np.zeros(17000)
+        b[-1]=1
+
+        self.i=self.i+1
+        return a[self.i-1],b[self.i-1]
         return 1,0
 
     def update_history(self,cur,choice):
@@ -418,7 +436,7 @@ class Env_stat():
                 ,'pm':np.sum(self.ret_v_pm,0)
                 }
 
-    def update(self,cur,choice):
+    def update_history(self,cur,choice):
         def get_usage(cur,key,res_total):
             return self.unit[key][cur].astype(float)/res_total
 
@@ -447,6 +465,95 @@ class Env_stat():
 
         self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
         self.ret_app_infer.append(self.deploy_state['a'])
+
+
+        if self.verbose==1:
+            threed_view(np.sum(self.ret_v_cpu,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_mem,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_disk,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_p,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_m,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+            threed_view(np.sum(self.ret_v_pm,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
+        # df_machine['cpu_deploy'].sum(axis=1).plot()
+
+        return {'c':np.sum(self.ret_v_cpu,0)
+                ,'m':np.sum(self.ret_v_mem,0)
+                ,'a':np.sum(self.ret_app_infer,0)
+                ,'cm':np.sum(self.ret_v_cpu_mean,0)
+                ,'d':np.sum(self.ret_v_disk,0)
+                ,'p_pm':np.sum(self.ret_v_p,0)
+                ,'m_pm':np.sum(self.ret_v_m,0)
+                ,'pm':np.sum(self.ret_v_pm,0)
+                }
+
+
+
+    def update(self,cur,choice,choice_idx):
+        def get_usage(cur,key,res_total):
+            return self.unit[key][cur].astype(float)/res_total
+
+        s=self.mn.iloc[:][['mid','cpu','mem','disk','p','m','pm']]
+        add=[]
+        for each in ['cpu','cm','mem','disk','p','m','pm']:
+            # self.ret_v_cpu.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
+            name_map={'cpu':'c','cm':'cm','mem':'m','disk':'d','p':'p_pm','m':'m_pm','pm':'pm'}
+            add.append([get_usage(cur,name_map[each],1)*self.mn_identity[each][choice_idx,:],self.deploy_state[name_map[each]]])
+
+        ref=[]
+        # ref.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
+        # ref.append(self.deploy_state['c'])
+
+        self.ret_v_cpu.append(add[0][0])
+        self.ret_v_cpu.append(add[0][1])
+        # assert np.any(self.ret_v_cpu[0]==ref[0])
+
+        ref=[]
+        # ref.append(s.apply(lambda x:get_usage(cur,'cm',1) if choice==x['mid'] else 0,axis=1).values)
+        # ref.append(self.deploy_state['cm'])
+
+        self.ret_v_cpu_mean.append(add[1][0])
+        self.ret_v_cpu_mean.append(add[1][1])
+        # assert np.any(self.ret_v_cpu_mean[0]==ref[0])
+
+        ref=[]
+        # ref.append(s.apply(lambda x:get_usage(cur,'m',x['mem']) if choice==x['mid'] else 0,axis=1).values)
+        # ref.append(self.deploy_state['m'])
+
+        self.ret_v_mem.append(add[2][0])
+        self.ret_v_mem.append(add[2][1])
+        # assert np.any(self.ret_v_mem[0]==ref[0])
+
+        ref=[]
+        # ref.append(s.apply(lambda x:get_usage(cur,'d',x['disk']) if choice==x['mid'] else 0,axis=1).values)
+        # ref.append(self.deploy_state['d'])
+        self.ret_v_disk.append(add[3][0])
+        self.ret_v_disk.append(add[3][1])
+        # assert np.any(self.ret_v_disk[0]==ref[0])
+
+        ref=[]
+        # ref.append(s.apply(lambda x:get_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
+        # ref.append(self.deploy_state['p_pm'])
+        self.ret_v_p.append(add[4][1])
+        self.ret_v_p.append(add[4][1])
+        # assert np.any(self.ret_v_p[0]==ref[0])
+
+        ref=[]
+        # ref.append(s.apply(lambda x:get_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
+        # ref.append(self.deploy_state['m_pm'])
+        self.ret_v_m.append(add[5][1])
+        self.ret_v_m.append(add[5][1])
+        # assert np.any(self.ret_v_m[0]==ref[0])
+
+        ref=[]
+        # ref.append(s.apply(lambda x:get_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
+        # ref.append(self.deploy_state['pm'])
+        self.ret_v_pm.append(add[6][1])
+        self.ret_v_pm.append(add[6][1])
+        # assert np.any(self.ret_v_pm[0]==ref[0])
+
+        self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
+        self.ret_app_infer.append(self.deploy_state['a'])
+
 
 
         if self.verbose==1:
