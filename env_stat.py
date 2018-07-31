@@ -233,21 +233,39 @@ class Env_stat():
         self.dic['li_mem']=self.li_mem
         self.dic['li_disk']=self.li_disk
 
+    def get_groups():
+        for g,v in self.app_inter.groupby('aid'):
+            g_li=g.append(g)
+            v_li=v.append(li)
+        self.pat_v=
+
     def evaluate(self,cur,choice):
 #         pass
-        import re
-        def re_find(text):
-
+        def re_find(text,a):
             p=re.compile('(\s+)')
             text=p.sub(' ',text)
-
-            for g,v in self.app_inter.groupby('aid') :
-                if re.findall(g,text):
-                    for each in v.ab:
-                        if re.findall(each,text):
-                            print(each)
-                            return 1
-            return 0
+            if a=0:
+                for g,v in self.app_inter.groupby('aid') :
+                    if re.findall(g,text):
+                    # if re_findall(g,text):
+                        for each in v.ab:
+                            if re.findall(each,text):
+                            # if re_findall(each,text):
+                                print(each)
+                                return 1
+            if a=1:
+                v_li=[]
+                for g,v in self.app_inter.groupby('aid') :
+                    if re.findall(g,text):
+                        for each in v.ab:
+                            v_li.append(each)
+                pat=')|('.join(v_li)
+                pat=r'('+pat+')'
+                p=re.compile(pat)
+                if p.findall(text):
+                    return 1
+                    # if re_findall(g,text):
+                return 0
 
         self.ret_init()
         self.li_init()
@@ -310,9 +328,10 @@ class Env_stat():
         # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
 
         if self.not_quick_roll==1:
-            end=re_find(text)
+            end=re_find(text,1)
+            assert re_find(text,0)==re_find(text,1)
             if end==1:
-                print('infer end')
+                print('\ninfer end')
             return 1,end
         # if any(r)==True:
             # print('end')

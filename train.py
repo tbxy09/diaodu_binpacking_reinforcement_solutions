@@ -29,7 +29,7 @@ import ipdb
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
-parser.add_argument('--verbose',type=int,default=0)
+parser.add_argument('--verbose',type=int,default=1)
 parser.add_argument('--fn',type=str,default='')
 parser.add_argument('--use-cache',type=int,default=0)
 parser.add_argument('--run-id',type=str,default='')
@@ -340,7 +340,7 @@ def train(m):
                 # optimizer=Adam(m.parameters(),lr=0.015)
             # if epoch%args.log_interval==0:
             if verbose:
-                if epoch%1==0:
+                if epoch%3==0:
                     save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
             print('\n---------------------------')
             print(loss)
