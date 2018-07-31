@@ -123,6 +123,8 @@ class Env_stat():
         self.mn_identity={each:np.identity(MA_NUM)*(1/(self.mn[each].values + np.finfo(np.float32).eps)) for each in ['cpu','mem','disk','p','m','pm']}
         self.mn_identity['cm']=np.identity(MA_NUM)
 
+        self.regex_gen()
+
     def m(self, p_value):
         if self._not_quick_roll!=p_value:
             print(p_value)
@@ -233,18 +235,13 @@ class Env_stat():
         self.dic['li_mem']=self.li_mem
         self.dic['li_disk']=self.li_disk
 
-    def get_groups():
-        for g,v in self.app_inter.groupby('aid'):
-            g_li=g.append(g)
-            v_li=v.append(li)
-        self.pat_v=
+    def evaluate_copy(self,cur,choice):
 
-    def evaluate(self,cur,choice):
-#         pass
         def re_find(text,a):
+            import re
             p=re.compile('(\s+)')
             text=p.sub(' ',text)
-            if a=0:
+            if a==0:
                 for g,v in self.app_inter.groupby('aid') :
                     if re.findall(g,text):
                     # if re_findall(g,text):
@@ -253,7 +250,7 @@ class Env_stat():
                             # if re_findall(each,text):
                                 print(each)
                                 return 1
-            if a=1:
+            if a==1:
                 v_li=[]
                 for g,v in self.app_inter.groupby('aid') :
                     if re.findall(g,text):
@@ -265,7 +262,7 @@ class Env_stat():
                 if p.findall(text):
                     return 1
                     # if re_findall(g,text):
-                return 0
+            return 0
 
         self.ret_init()
         self.li_init()
@@ -290,8 +287,7 @@ class Env_stat():
 
         self.deploy_state=self.update(cur,choice,self.n)
 
-#         if any(self.update(cur,choice).max(0)>threshold):
-
+        # if any(self.update(cur,choice).max(0)>threshold):
         # print('{0},{1}'.format(self.env_cpu.max(1).argmax(),self.env_cpu.max(1).max()))
         # print('{0}'.format(env_cpu_abs.sum(1).max()))
         # print('{0},{1}'.format(self.env_mem.max(1).argmax(),self.env_mem.max(1).max()))
@@ -302,7 +298,137 @@ class Env_stat():
         # self.dic['matrix']=self.matrix
         # self.dic['deploy_state']=self.deploy_state
 
-        # if any(self.env_mem.max(1)>1):
+        for k in  ['c','m','d','p_pm','m_pm','pm']:
+            if any(self.deploy_state[k]>1):
+                pass
+                # print('\n')
+                # print(k ,'end')
+                # return self.env_cpu.sum(0).sum(0),1
+                # return 1,1
+
+        # for k in  ['c','m']:
+        #     if any(self.deploy_state[k].max(1)>1):
+        #         print(k ,'end')
+        #         # return self.env_cpu.sum(0).sum(0),1
+        #         return 1,1
+
+        # text=(self.env_app+' ').sum()
+        text=(self.deploy_state['a']+' ').sum()
+
+        # ab=self.app_inter.ab.sort_values()
+        # r=self.app_inter[['ab']].apply(lambda x: re.findall(x.ab,text),axis=1)
+        # r=[re.findall(each,text) for each in self.ab.ab]
+                                       # ,axis=1)
+        # [re.findall('(app_3432).*?(app_7652).*?(app_8618).*?(app_1300).*?(app_4663).*?(app_8324)',text) for each in ab]
+        # r=pd.Series(r).apply(lambda x: len(x)!=0)
+        # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
+
+        a=np.ones(69000)
+        b=np.zeros(69000)
+        b[-1]=1
+
+        self.i=self.i+1
+        return a[self.i-1],b[self.i-1]
+
+        if self.not_quick_roll==1:
+            end=re_find(text,1)
+            # assert re_find(text,0)==re_find(text,1)
+            if end==1:
+                print('\ninfer end')
+            # return 1,end
+
+        a=np.ones(250)
+        b=np.zeros(250)
+        b[-1]=1
+
+        self.i=self.i+1
+        return a[self.i-1],b[self.i-1]
+
+        # if any(r)==True:
+            # print('end')
+
+        # return self.env_cpu.sum(0).sum(0),end
+
+        return 1,0
+
+    def regex_gen():
+        g_li=[]
+        v_li=[]
+        for g,v in self.app_inter.groupby('aid') :
+            g_li.append(g)
+            for each in v.ab:
+                v_li.append(each)
+        pat_v=')|('.join(v_li)
+        # pat_g=')|('.join(g_li)
+        pat=pat_v
+        pat=r'('+pat+')'
+        self.p=re.compile(pat)
+
+    def evaluate(self,cur,choice):
+
+        def re_find(text,a):
+            import re
+            p=re.compile('(\s+)')
+            text=p.sub(' ',text)
+            if a==0:
+                for g,v in self.app_inter.groupby('aid') :
+                    if re.findall(g,text):
+                    # if re_findall(g,text):
+                        for each in v.ab:
+                            if re.findall(each,text):
+                            # if re_findall(each,text):
+                                print(each)
+                                return 1
+            if a==1:
+                v_li=[]
+                for g,v in self.app_inter.groupby('aid') :
+                    if re.findall(g,text):
+                        for each in v.ab:
+                            v_li.append(each)
+                pat=')|('.join(v_li)
+                pat=r'('+pat+')'
+                p=re.compile(pat)
+                if p.findall(text):
+                    return 1
+                    # if re_findall(g,text):
+            if a==2:
+                self.p.findall(text)
+            return 0
+
+        self.ret_init()
+        self.li_init()
+
+        # a=np.ones(250)
+        # b=np.zeros(250)
+        # b[-1]=1
+
+        # self.i=self.i+1
+        # return a[self.i-1],b[self.i-1]
+
+        if choice>self.mn.shape[0]-1:
+            # return self.env_cpu.sum(0).sum(0),1
+            return 1,1
+
+        self.n=(self.n+choice)%MA_NUM
+        # print('\n')
+        # print(self.n,choice)
+        choice=self.mn.mid[self.n]
+
+        # self.env_cpu,self.env_mem,self.env_app,env_cpu_abs,env_mem_abs,self.env_disk=self.update(cur,choice)
+
+        self.deploy_state=self.update(cur,choice,self.n)
+
+        # if any(self.update(cur,choice).max(0)>threshold):
+        # print('{0},{1}'.format(self.env_cpu.max(1).argmax(),self.env_cpu.max(1).max()))
+        # print('{0}'.format(env_cpu_abs.sum(1).max()))
+        # print('{0},{1}'.format(self.env_mem.max(1).argmax(),self.env_mem.max(1).max()))
+        # print('{0}'.format(self.env_mem.sum(1).max()))
+
+        self.env_matrix(cur)
+
+        # self.dic['matrix']=self.matrix
+        # self.dic['deploy_state']=self.deploy_state
+
         for k in  ['c','m','d','p_pm','m_pm','pm']:
             if any(self.deploy_state[k]>1):
                 print('\n')
@@ -328,15 +454,24 @@ class Env_stat():
         # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
 
         if self.not_quick_roll==1:
-            end=re_find(text,1)
+            end=re_find(text,2)
             assert re_find(text,0)==re_find(text,1)
             if end==1:
                 print('\ninfer end')
             return 1,end
+
+        # a=np.ones(250)
+        # b=np.zeros(250)
+        # b[-1]=1
+
+        # self.i=self.i+1
+        # return a[self.i-1],b[self.i-1]
+
         # if any(r)==True:
             # print('end')
 
         # return self.env_cpu.sum(0).sum(0),end
+
         return 1,0
 
     def update_history(self,cur,choice):

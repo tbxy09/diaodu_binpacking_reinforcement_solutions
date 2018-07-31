@@ -99,11 +99,11 @@ def save_checkpoints(rewards,log_probs,e,iid,id_,run_id):
     if run_id not in os.listdir('/data2/run/'):os.mkdir('/data2/run/'+run_id)
     fn='/data2/run/{0}/policy{1}.pth.tar'.format(run_id,e)
     dic['saved_log_probs']=log_probs
-    dic['rewards']=rewards
+    # dic['rewards']=rewards
     # dic['env_dic']=env.dic
     dic['state_dict']=m.state_dict()
     # dic['iid']=iid
-    dic['id_']=id_
+    # dic['id_']=id_
     # dic['policy_rewards']=[]
     # dic['policy_rewards'].append(policy_rewards)
     # dic['len'].append(len(self.rewards))
@@ -302,6 +302,10 @@ def train(m):
 
             if end:
                 break
+
+            # del m.logprob_history[:]
+            # del m.rewards[:]
+
     #     print('---------------------------')
         if epoch%1==0:
 
@@ -314,25 +318,33 @@ def train(m):
                 R = r + args.gamma * R
                 rewards.insert(0, R)
             rewards = torch.Tensor(rewards)
-            log_rewards.append(rewards.data.numpy())
+
+            # log_rewards.append(rewards.data.numpy())
+
             rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
             # print('\nrewards:{}'.format(rewards))
             rewards = rewards/10
             # print('\nrewards:{}'.format(rewards))
-            log_rewards.append(rewards.data.numpy())
+
+            # log_rewards.append(rewards.data.numpy())
+
         #     print('the overall reward{}'.format(rewards))
         #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
         #     print(rewards)
             loss_li=[]
             # log_saved.append(m.logprob_history.data.numpy())
-            log_saved.append(torch.cat(m.logprob_history).data.numpy())
+            # log_saved.append(torch.cat(m.logprob_history).data.numpy())
             for log_prob,r in zip(m.logprob_history,rewards):
                 loss_li.append(-log_prob*r)
         #     print(m.logprob_history)
         #     print(loss_li)
-            log_saved.append(torch.cat(loss_li).data.numpy())
+
+            # log_saved.append(torch.cat(loss_li).data.numpy())
+
             loss = torch.cat(loss_li).sum()
+
             log_saved.append(loss.data.numpy())
+
             # if loss_old==loss:
                 # print('loss stay the same')
                 # torch.manual_seed(args.seed+100)
