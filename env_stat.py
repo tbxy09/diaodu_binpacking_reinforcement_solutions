@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from util.threed_view import *
 import gc
+import time
 
 MA_NUM=6000
 APP_NUM=9338
@@ -64,6 +65,7 @@ class Env_stat():
                     }
         self.n=0
         self.i=0
+        # print(self.p)
         self.ret_v_cpu=[]
         self.ret_v_mem=[]
         self.ret_v_disk=[]
@@ -351,7 +353,8 @@ class Env_stat():
 
         return 1,0
 
-    def regex_gen():
+    def regex_gen(self):
+        import re
         g_li=[]
         v_li=[]
         for g,v in self.app_inter.groupby('aid') :
@@ -364,36 +367,7 @@ class Env_stat():
         pat=r'('+pat+')'
         self.p=re.compile(pat)
 
-    def evaluate(self,cur,choice):
-
-        def re_find(text,a):
-            import re
-            p=re.compile('(\s+)')
-            text=p.sub(' ',text)
-            if a==0:
-                for g,v in self.app_inter.groupby('aid') :
-                    if re.findall(g,text):
-                    # if re_findall(g,text):
-                        for each in v.ab:
-                            if re.findall(each,text):
-                            # if re_findall(each,text):
-                                print(each)
-                                return 1
-            if a==1:
-                v_li=[]
-                for g,v in self.app_inter.groupby('aid') :
-                    if re.findall(g,text):
-                        for each in v.ab:
-                            v_li.append(each)
-                pat=')|('.join(v_li)
-                pat=r'('+pat+')'
-                p=re.compile(pat)
-                if p.findall(text):
-                    return 1
-                    # if re_findall(g,text):
-            if a==2:
-                self.p.findall(text)
-            return 0
+    def evaluate(self,cur,choice,proc,re_find):
 
         self.ret_init()
         self.li_init()
@@ -449,16 +423,31 @@ class Env_stat():
         # r=self.app_inter[['ab']].apply(lambda x: re.findall(x.ab,text),axis=1)
         # r=[re.findall(each,text) for each in self.ab.ab]
                                        # ,axis=1)
-        # [re.findall('(app_3432).*?(app_7652).*?(app_8618).*?(app_1300).*?(app_4663).*?(app_8324)',text) for each in ab]
         # r=pd.Series(r).apply(lambda x: len(x)!=0)
         # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
 
         if self.not_quick_roll==1:
-            end=re_find(text,2)
-            assert re_find(text,0)==re_find(text,1)
-            if end==1:
+            # startf=time.time()
+            # end=self.re_find(text,0)
+            app_inter_a=self.app_inter.iloc[:2*8810,:]
+            app_inter_b=self.app_inter.iloc[2*8810:,:]
+            # app_inter_c=env_stat.app_inter.iloc[2*8810:3*8810,:]
+            # app_inter_d=env_stat.app_inter.iloc[3*8810:,:]
+
+            result_a=proc.apply_async(re_find,(text,app_inter_a))
+            # result_a.get()
+            if result_a.get()==1:
                 print('\ninfer end')
-            return 1,end
+                return 1,1
+            result_b=proc.apply_async(re_find,(text,app_inter_b))
+            if result_b.get()==1:
+                print('\ninfer end')
+                return 1,1
+            # result=p.apply_async(self.re_find,(text,app_inter_a))
+            # result.get()
+            # assert re_find(text,0)==re_find(text,1)
+            # endf=time.time()
+            # print('\ninfer end {}'.format(endf-startf))
 
         # a=np.ones(250)
         # b=np.zeros(250)

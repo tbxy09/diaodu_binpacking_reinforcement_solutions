@@ -1,6 +1,57 @@
 import pandas as pd
 import numpy as np
 import torch
+
+def re_find(text,app_inter):
+    import re
+    p=re.compile('(\s+)')
+    text=p.sub(' ',text)
+
+    for g,v in app_inter.groupby('aid') :
+        if re.findall(g,text):
+            for each in v.ab:
+                if re.findall(each,text):
+                    print(each)
+                    return 1
+    return 0
+
+def re_find_x(text,a):
+    import re
+    p=re.compile('(\s+)')
+    text=p.sub(' ',text)
+    if a==0:
+        for g,v in self.app_inter.groupby('aid') :
+            if re.findall(g,text):
+            # if re_findall(g,text):
+                pat=')|('.join(v.bid.tolist())
+                pat=r'('+pat+')'
+                if re.findall(pat.bid,text):
+                    for each in v.ab:
+                        if re.findall(each,text):
+                        # if re_findall(each,text):
+                            print(each)
+                            return 1
+    if a==1:
+        v_li=[]
+        for g,v in self.app_inter.groupby('aid') :
+            if re.findall(g,text):
+                for each in v.ab:
+                    v_li.append(each)
+        if len(v_li):
+            pat=')|('.join(v_li)
+            pat=r'('+pat+')'
+            print(len(pat))
+            # p=re.compile(pat)
+            start=time.time()
+            if re.findall(pat,text):
+                return 1
+            end=time.time()
+            print('\ninside infer end:{}'.format(end-start))
+            # if re_findall(g,text):
+    if a==2:
+        self.p.findall(text)
+    return 0
+
 def gen_expand(gen,num):
     for i,(x,y) in enumerate(gen):
     #     print(i)

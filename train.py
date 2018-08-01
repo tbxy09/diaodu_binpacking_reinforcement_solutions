@@ -24,6 +24,7 @@ from keras.utils import Progbar
 from env_stat import MA_NUM,APP_NUM,INST_NUM
 from collections import OrderedDict
 from itertools import count
+from multiprocessing import Pool
 import os
 import ipdb
 
@@ -51,6 +52,9 @@ pre_processor=Preprocess()
 df_app_res,df_machine,df_ins,df_app_inter,df_ins_sum=pre_processor.run_pre()
 del pre_processor
 gc.collect()
+proc=Pool(2)
+
+
 env=Env_stat(df_machine,df_app_res,df_app_inter,df_ins_sum,verbose=0)
 del df_machine,df_app_res,df_app_inter
 gc.collect()
@@ -59,10 +63,11 @@ gc.collect()
 from policymodel import Policy
 m=Policy()
 # m.weight_action(init='normal')
-optimizer=optim.Adam(m.parameters(),lr=0.01)
+optimizer=optim.Adam(m.parameters(),lr=0.001)
 dic={}
 
 use_cuda = torch.cuda.is_available()
+
 
 def dic_init(fn=None):
     if fn==None:
@@ -132,7 +137,7 @@ def run_game(mid,step,not_quick_roll):
     # id_=id_.tolist()
     # print(id_)
 
-    reward,end=env.evaluate(step,mid)
+    reward,end=env.evaluate(step,mid,proc,re_find)
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)
     if not_quick_roll:
         loss=m.get_logprob(mid)
@@ -411,6 +416,7 @@ def quick_roll():
                 break
 # load(args.fn)
 import torch.multiprocessing as mp
+from gen_expand import re_find
 if use_cuda:
     m=m.cuda()
 if args.non_roll:
