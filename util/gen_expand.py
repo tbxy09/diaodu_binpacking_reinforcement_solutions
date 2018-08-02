@@ -1,18 +1,22 @@
 import pandas as pd
 import numpy as np
 import torch
-def proc_split(app_inter,unit):
+def proc_split(app_inter,unit,num):
 # 4405
     li=[]
     unit=int(unit)
-    li.append(app_inter.iloc[:unit,:])
-    li.append(app_inter.iloc[unit:2*unit,:])
-    li.append(app_inter.iloc[2*unit:3*unit,:])
-    li.append(app_inter.iloc[3*unit:4*unit,:])
-    li.append(app_inter.iloc[4*unit:5*unit,:])
-    li.append(app_inter.iloc[5*unit:6*unit,:])
-    li.append(app_inter.iloc[6*unit:7*unit,:])
-    li.append(app_inter.iloc[7*unit:,:])
+    # li.append(app_inter.iloc[:1*unit,:])
+    # li.append(app_inter.iloc[1*unit:2*unit,:])
+    # li.append(app_inter.iloc[2*unit:3*unit,:])
+    # li.append(app_inter.iloc[3*unit:4*unit,:])
+    # li.append(app_inter.iloc[4*unit:5*unit,:])
+    # li.append(app_inter.iloc[5*unit:6*unit,:])
+    # li.append(app_inter.iloc[6*unit:7*unit,:])
+    # li.append(app_inter.iloc[7*unit:,:])
+    for i in range(num-1):
+        li.append(app_inter.iloc[i*unit:(i+1)*unit])
+    li.append(app_inter.iloc[(num-1)*unit:,:])
+    # print('\nlen{}'.format(len(li)))
     return li
 def some_code(re_find,text):
         result_a1=proc.apply_async(re_find,(text,vi_li_a1))

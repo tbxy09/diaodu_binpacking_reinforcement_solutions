@@ -26,10 +26,11 @@ def en_vec(df):
     fe=encode_page_features(df[col_in_en])
     return fe
 class Preprocess():
-    def __init__(self):
-        self.data_read()
-    def data_read(self):
-        base='/mnt/osstb/tianchi/diaodu/'
+    def __init__(self,base=None):
+        self.data_read(base)
+    def data_read(self,base=None):
+        if base==None:
+            base='/mnt/osstb/tianchi/diaodu/'
 
         fn=first_try(base,'*.csv')
 
@@ -45,6 +46,7 @@ class Preprocess():
         self.df_app_res=pd.read_csv(fn[1],names=col_li_aid)
 
         self.df_ins=pd.read_csv(fn[2],names=['iid','aid','mid'])
+        print(fn[2])
 
         self.df_machine=pd.read_csv(fn[3],names=col_li_mid)
 
@@ -183,7 +185,7 @@ class Preprocess():
         def fb(group):
             return '|'.join(group.bid.tolist())
         # df_app_inter_grouped=grouped['v','bid'].agg(lambda x:len(x.bid))
-        return grouped['v','bid'].agg(f)
+        return grouped['v','bid'].agg(f).reset_index()
 
 
     def run_pre(self):

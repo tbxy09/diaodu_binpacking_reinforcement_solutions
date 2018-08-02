@@ -32,6 +32,7 @@ parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
 parser.add_argument('--verbose',type=int,default=1)
 parser.add_argument('--fn',type=str,default='')
+parser.add_argument('--base',type=str,default='')
 parser.add_argument('--use-cache',type=int,default=0)
 parser.add_argument('--run-id',type=str,default='')
 parser.add_argument('--log-interval', type=int, default=8, metavar='N',
@@ -48,7 +49,7 @@ print(args.gamma)
 print('train')
 torch.manual_seed(args.seed)
 
-pre_processor=Preprocess()
+pre_processor=Preprocess(args.base)
 df_app_res,df_machine,df_ins,df_app_inter,df_ins_sum=pre_processor.run_pre()
 del pre_processor
 gc.collect()

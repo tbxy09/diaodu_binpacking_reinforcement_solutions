@@ -8,7 +8,7 @@ import time
 MA_NUM=6000
 APP_NUM=9338
 INST_NUM=68219
-NUM_PROC=2
+NUM_PROC=12
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):
@@ -411,7 +411,7 @@ class Env_stat():
             # end=self.re_find(text,0)
         qsplit=self.app_inter
         unit=(len(qsplit)-len(qsplit)%NUM_PROC)/NUM_PROC
-        splits=proc_split(qsplit,unit)
+        splits=proc_split(qsplit,unit,NUM_PROC)
 
         result=[]
 
