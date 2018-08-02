@@ -1,12 +1,14 @@
 import numpy as np
 import pandas as pd
 from util.threed_view import *
+from util.gen_expand import proc_split
 import gc
 import time
 
 MA_NUM=6000
 APP_NUM=9338
 INST_NUM=68219
+NUM_PROC=2
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):
@@ -367,7 +369,7 @@ class Env_stat():
         pat=r'('+pat+')'
         self.p=re.compile(pat)
 
-    def evaluate(self,cur,choice,proc,re_find):
+    def evaluate(self,cur,choice,proc,f):
 
         self.ret_init()
         self.li_init()
@@ -380,69 +382,46 @@ class Env_stat():
         # return a[self.i-1],b[self.i-1]
 
         if choice>self.mn.shape[0]-1:
-            # return self.env_cpu.sum(0).sum(0),1
             return 1,1
 
         self.n=(self.n+choice)%MA_NUM
-        # print('\n')
-        # print(self.n,choice)
         choice=self.mn.mid[self.n]
-
-        # self.env_cpu,self.env_mem,self.env_app,env_cpu_abs,env_mem_abs,self.env_disk=self.update(cur,choice)
 
         self.deploy_state=self.update(cur,choice,self.n)
 
-        # if any(self.update(cur,choice).max(0)>threshold):
-        # print('{0},{1}'.format(self.env_cpu.max(1).argmax(),self.env_cpu.max(1).max()))
-        # print('{0}'.format(env_cpu_abs.sum(1).max()))
-        # print('{0},{1}'.format(self.env_mem.max(1).argmax(),self.env_mem.max(1).max()))
-        # print('{0}'.format(self.env_mem.sum(1).max()))
-
         self.env_matrix(cur)
-
-        # self.dic['matrix']=self.matrix
-        # self.dic['deploy_state']=self.deploy_state
 
         for k in  ['c','m','d','p_pm','m_pm','pm']:
             if any(self.deploy_state[k]>1):
                 print('\n')
                 print(k ,'end')
-                # return self.env_cpu.sum(0).sum(0),1
                 return 1,1
 
-        # for k in  ['c','m']:
-        #     if any(self.deploy_state[k].max(1)>1):
-        #         print(k ,'end')
-        #         # return self.env_cpu.sum(0).sum(0),1
-        #         return 1,1
-
-        # text=(self.env_app+' ').sum()
         text=(self.deploy_state['a']+' ').sum()
 
-        # ab=self.app_inter.ab.sort_values()
-        # r=self.app_inter[['ab']].apply(lambda x: re.findall(x.ab,text),axis=1)
-        # r=[re.findall(each,text) for each in self.ab.ab]
-                                       # ,axis=1)
-        # r=pd.Series(r).apply(lambda x: len(x)!=0)
-        # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
+        # if self.not_quick_roll==1:
+            # if use_ma:
+            #     v_li=[]
+            #     for g,v in self.app_inter.groupby('aid') :
+            #         if re.findall(g,text):
+            #             for each in v.ab:
+            #                 v_li.append(each)
 
-        if self.not_quick_roll==1:
             # startf=time.time()
             # end=self.re_find(text,0)
-            app_inter_a=self.app_inter.iloc[:2*8810,:]
-            app_inter_b=self.app_inter.iloc[2*8810:,:]
-            # app_inter_c=env_stat.app_inter.iloc[2*8810:3*8810,:]
-            # app_inter_d=env_stat.app_inter.iloc[3*8810:,:]
+        qsplit=self.app_inter
+        unit=(len(qsplit)-len(qsplit)%NUM_PROC)/NUM_PROC
+        splits=proc_split(qsplit,unit)
 
-            result_a=proc.apply_async(re_find,(text,app_inter_a))
-            # result_a.get()
-            if result_a.get()==1:
+        result=[]
+
+        for i in range(NUM_PROC):
+            result.append(proc.apply_async(f,(text,splits[i])))
+        for i in range(NUM_PROC):
+            if result[i].get()==1:
                 print('\ninfer end')
                 return 1,1
-            result_b=proc.apply_async(re_find,(text,app_inter_b))
-            if result_b.get()==1:
-                print('\ninfer end')
-                return 1,1
+
             # result=p.apply_async(self.re_find,(text,app_inter_a))
             # result.get()
             # assert re_find(text,0)==re_find(text,1)

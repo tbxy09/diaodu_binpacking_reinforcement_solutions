@@ -1,8 +1,68 @@
 import pandas as pd
 import numpy as np
 import torch
+def proc_split(app_inter,unit):
+# 4405
+    li=[]
+    unit=int(unit)
+    li.append(app_inter.iloc[:unit,:])
+    li.append(app_inter.iloc[unit:2*unit,:])
+    li.append(app_inter.iloc[2*unit:3*unit,:])
+    li.append(app_inter.iloc[3*unit:4*unit,:])
+    li.append(app_inter.iloc[4*unit:5*unit,:])
+    li.append(app_inter.iloc[5*unit:6*unit,:])
+    li.append(app_inter.iloc[6*unit:7*unit,:])
+    li.append(app_inter.iloc[7*unit:,:])
+    return li
+def some_code(re_find,text):
+        result_a1=proc.apply_async(re_find,(text,vi_li_a1))
+        if result_a1.get()==1:
+            print('\ninfer end')
+            return 1,1
+        result_a2=proc.apply_async(re_find,(text,vi_li_a2))
+        if result_a2.get()==1:
+            print('\ninfer end')
+            return 1,1
+        result_b1=proc.apply_async(re_find,(text,vi_li_b1))
+        if result_b1.get()==1:
+            print('\ninfer end')
+            return 1,1
+        result_b2=proc.apply_async(re_find,(text,vi_li_b2))
+        if result_b2.get()==1:
+            print('\ninfer end')
+            return 1,1
+        result_c1=proc.apply_async(re_find,(text,vi_li_c1))
+        if result_c1.get()==1:
+            print('\ninfer end')
+            return 1,1
+        result_c2=proc.apply_async(re_find,(text,vi_li_c2))
+        if result_c2.get()==1:
+            print('\ninfer end')
+            return 1,1
+        result_d1=proc.apply_async(re_find,(text,vi_li_d1))
+        if result_d1.get()==1:
+            print('\ninfer end')
+            return 1,1
+        result_d2=proc.apply_async(re_find,(text,vi_li_d2))
+        if result_d2.get()==1:
+            print('\ninfer end')
+            return 1,1
 
-def re_find(text,app_inter):
+def re_find(text,v_li):
+    import time
+    if len(v_li):
+        pat=')|('.join(v_li)
+        pat=r'('+pat+')'
+        print(len(pat))
+        # p=re.compile(pat)
+        start=time.time()
+        if re.findall(pat,text):
+            return 1
+        end=time.time()
+        print('\ninside infer end:{}'.format(end-start))
+    return 0
+
+def re_find_y(text,app_inter):
     import re
     p=re.compile('(\s+)')
     text=p.sub(' ',text)
@@ -15,7 +75,7 @@ def re_find(text,app_inter):
                     return 1
     return 0
 
-def re_find_x(text,a):
+def re_find_x(text,a=1):
     import re
     p=re.compile('(\s+)')
     text=p.sub(' ',text)

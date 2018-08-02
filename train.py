@@ -13,7 +13,7 @@ sys.path.append('./')
 from dst import *
 from model import *
 sys.path.append('./util')
-from gen_expand import *
+from gen_expand import re_find_y
 from threed_view import *
 from meter import AverageMeter
 import random
@@ -21,7 +21,7 @@ from preprocess import Preprocess
 from preprocess import en_vec
 from env_stat import Env_stat
 from keras.utils import Progbar
-from env_stat import MA_NUM,APP_NUM,INST_NUM
+from env_stat import MA_NUM,APP_NUM,INST_NUM,NUM_PROC
 from collections import OrderedDict
 from itertools import count
 from multiprocessing import Pool
@@ -52,7 +52,7 @@ pre_processor=Preprocess()
 df_app_res,df_machine,df_ins,df_app_inter,df_ins_sum=pre_processor.run_pre()
 del pre_processor
 gc.collect()
-proc=Pool(2)
+proc=Pool(NUM_PROC)
 
 
 env=Env_stat(df_machine,df_app_res,df_app_inter,df_ins_sum,verbose=0)
@@ -83,8 +83,8 @@ def dic_init(fn=None):
         [op_(i,m,'im')for i,m in zip(dic['iid'],dic['mid']) if i!='']
         dic['im']=OrderedDict(sorted(dic['im'].items(), key=lambda t: t[1],reverse=True))
     else:
-        # load(fn)
-        load_checkpoints(fn)
+        load(fn)
+        # load_checkpoints(fn)
 
     # m=Policy()
     # optimizer=optim.Adam(m.parameters(),lr=0.2)
@@ -137,7 +137,7 @@ def run_game(mid,step,not_quick_roll):
     # id_=id_.tolist()
     # print(id_)
 
-    reward,end=env.evaluate(step,mid,proc,re_find)
+    reward,end=env.evaluate(step,mid,proc,re_find_y)
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)
     if not_quick_roll:
         loss=m.get_logprob(mid)
@@ -392,14 +392,21 @@ def quick_roll():
         print(len(dic['mid']))
         # load_checkpoints(fn)
         # for id_,(iid,aid) in enumerate(env.i_a.items()):
-        for id_,(iid,mid) in enumerate(dic['im'].items()):
+        # for id_,(iid,mid) in enumerate(dic['im'].items()):
+        for id_,iid in enumerate(dic['iid']):
         # foirwarding
             # cur=env.app[app.aid==aid]
+            mid=dic['mid'][id_]
+            # print(iid,mid)
 
             # if (aid+iid)=='':
             if mid==-1:
                 break
             else:
+                if id_==0:
+                    print(iid)
+                if id_==300:
+                    print(iid)
                 aid=env.i_a[iid]
                 cur=env.a_idx[aid]
                 a=env.df_a_i.iloc[cur].cpu.split('|')
@@ -416,7 +423,7 @@ def quick_roll():
                 break
 # load(args.fn)
 import torch.multiprocessing as mp
-from gen_expand import re_find
+from gen_expand import re_find_y
 if use_cuda:
     m=m.cuda()
 if args.non_roll:
