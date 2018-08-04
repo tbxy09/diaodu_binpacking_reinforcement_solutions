@@ -75,7 +75,7 @@ def re_find_y(text,app_inter):
         if re.findall(g,text):
             for each in v.ab:
                 if re.findall(each,text):
-                    print(each)
+                    # print(each)
                     return 1
     return 0
 

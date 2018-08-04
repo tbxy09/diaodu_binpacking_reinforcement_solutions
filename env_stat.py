@@ -7,7 +7,8 @@ import time
 
 MA_NUM=6000
 APP_NUM=9338
-INST_NUM=68219
+# INST_NUM=68219
+INST_NUM=68224
 NUM_PROC=12
 
 class Env_stat():
@@ -369,7 +370,7 @@ class Env_stat():
         pat=r'('+pat+')'
         self.p=re.compile(pat)
 
-    def evaluate(self,cur,choice,proc,f):
+    def evaluate(self,cur,choice,proc,f,mid_real):
 
         self.ret_init()
         self.li_init()
@@ -383,11 +384,27 @@ class Env_stat():
 
         if choice>self.mn.shape[0]-1:
             return 1,1
+        print(choice,mid_real)
+        int_mid_real=0
+        if mid_real=='ff':
+            int_mid_real=-1
+        if choice==-1|int_mid_real==-1:
+            if int_mid_real==-1:
+                self.n=(self.n+choice)%MA_NUM
+                choice=self.mn.mid[self.n]
+                self.deploy_state=self.update(cur,choice,self.n)
+            if choice==-1:
+                self.n=self.mn.mid.tolist().index(mid_real)
+                self.deploy_state=self.update(cur,mid_real,self.n)
+        else:
+            self.n=(self.n+choice)%MA_NUM
+            choice=self.mn.mid[self.n]
+            n_minus=self.mn.mid.tolist().index(mid_real)
+            # choice_minus=self.mn.mid[n_minus]
+            self.deploy_state=self.update(cur,choice,self.n,mid_real,n_minus)
 
-        self.n=(self.n+choice)%MA_NUM
-        choice=self.mn.mid[self.n]
+        # print(choice)
 
-        self.deploy_state=self.update(cur,choice,self.n)
 
         self.env_matrix(cur)
 
@@ -419,7 +436,7 @@ class Env_stat():
             result.append(proc.apply_async(f,(text,splits[i])))
         for i in range(NUM_PROC):
             if result[i].get()==1:
-                print('\ninfer end')
+                # print('\ninfer end')
                 return 1,1
 
             # result=p.apply_async(self.re_find,(text,app_inter_a))
@@ -604,7 +621,7 @@ class Env_stat():
 
 
 
-    def update(self,cur,choice,choice_idx):
+    def update(self,cur,choice,choice_idx,choice_minus=None,choice_idx_minus=None):
         def get_usage(cur,key,res_total):
             return self.unit[key][cur].astype(float)/res_total
 
@@ -613,63 +630,81 @@ class Env_stat():
         for each in ['cpu','cm','mem','disk','p','m','pm']:
             # self.ret_v_cpu.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
             name_map={'cpu':'c','cm':'cm','mem':'m','disk':'d','p':'p_pm','m':'m_pm','pm':'pm'}
-            add.append([get_usage(cur,name_map[each],1)*self.mn_identity[each][choice_idx,:],self.deploy_state[name_map[each]]])
+            if choice_idx_minus==None:
+                add.append([
+                        get_usage(cur,name_map[each],1)*self.mn_identity[each][choice_idx,:],
+                        self.deploy_state[name_map[each]]])
+            else:
+                add.append([(-1)*get_usage(cur,name_map[each],1)*self.mn_identity[each][choice_idx_minus,:],
+                        get_usage(cur,name_map[each],1)*self.mn_identity[each][choice_idx,:],
+                        self.deploy_state[name_map[each]]])
 
         ref=[]
         # ref.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
         # ref.append(self.deploy_state['c'])
 
-        self.ret_v_cpu.append(add[0][0])
-        self.ret_v_cpu.append(add[0][1])
+        [self.ret_v_cpu.append(each) for each in add[0]]
+        # self.ret_v_cpu.append(add[0][1])
+        # self.ret_v_cpu.append(add[0][2])
         # assert np.any(self.ret_v_cpu[0]==ref[0])
 
         ref=[]
         # ref.append(s.apply(lambda x:get_usage(cur,'cm',1) if choice==x['mid'] else 0,axis=1).values)
         # ref.append(self.deploy_state['cm'])
 
-        self.ret_v_cpu_mean.append(add[1][0])
-        self.ret_v_cpu_mean.append(add[1][1])
+        [self.ret_v_cpu_mean.append(each) for each in add[1]]
+        # self.ret_v_cpu_mean.append(add[1][1])
+        # self.ret_v_cpu_mean.append(add[1][2])
         # assert np.any(self.ret_v_cpu_mean[0]==ref[0])
 
         ref=[]
         # ref.append(s.apply(lambda x:get_usage(cur,'m',x['mem']) if choice==x['mid'] else 0,axis=1).values)
         # ref.append(self.deploy_state['m'])
 
-        self.ret_v_mem.append(add[2][0])
-        self.ret_v_mem.append(add[2][1])
+        [self.ret_v_mem.append(each) for each in add[2]]
+
+        # self.ret_v_mem.append(add[2][1])
+        # self.ret_v_mem.append(add[2][2])
         # assert np.any(self.ret_v_mem[0]==ref[0])
 
         ref=[]
         # ref.append(s.apply(lambda x:get_usage(cur,'d',x['disk']) if choice==x['mid'] else 0,axis=1).values)
         # ref.append(self.deploy_state['d'])
-        self.ret_v_disk.append(add[3][0])
-        self.ret_v_disk.append(add[3][1])
+        [self.ret_v_disk.append(each) for each in add[3]]
+        # self.ret_v_disk.append(add[3][1])
+        # self.ret_v_disk.append(add[3][2])
         # assert np.any(self.ret_v_disk[0]==ref[0])
 
         ref=[]
         # ref.append(s.apply(lambda x:get_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
         # ref.append(self.deploy_state['p_pm'])
-        self.ret_v_p.append(add[4][1])
-        self.ret_v_p.append(add[4][1])
+        [self.ret_v_p.append(each) for each in add[4]]
+
+        # self.ret_v_p.append(add[4][1])
+        # self.ret_v_p.append(add[4][2])
         # assert np.any(self.ret_v_p[0]==ref[0])
 
         ref=[]
         # ref.append(s.apply(lambda x:get_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
         # ref.append(self.deploy_state['m_pm'])
-        self.ret_v_m.append(add[5][1])
-        self.ret_v_m.append(add[5][1])
+        [self.ret_v_m.append(each) for each in add[5]]
+
+        # self.ret_v_m.append(add[5][1])
+        # self.ret_v_m.append(add[5][1])
         # assert np.any(self.ret_v_m[0]==ref[0])
 
         ref=[]
         # ref.append(s.apply(lambda x:get_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
         # ref.append(self.deploy_state['pm'])
-        self.ret_v_pm.append(add[6][1])
-        self.ret_v_pm.append(add[6][1])
+        [self.ret_v_pm.append(each) for each in add[6]]
+
+        # self.ret_v_pm.append(add[6][1])
         # assert np.any(self.ret_v_pm[0]==ref[0])
 
+        if choice_idx_minus!=None:
+            self.deploy_state['a'][choice_idx_minus]=''.join(self.deploy_state['a'][choice_idx_minus].split(self.df_a_i.aid[cur],1))
         self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
         self.ret_app_infer.append(self.deploy_state['a'])
-
 
 
         if self.verbose==1:
