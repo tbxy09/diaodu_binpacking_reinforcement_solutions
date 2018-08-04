@@ -279,6 +279,7 @@ def train(m):
         # for id_,iid in enumerate(df_ins.iid.values):
         update_id=0
 
+        bar=Progbar(target=len(iid_li),width=30,interval=0.05)
         for id_,iid in enumerate(iid_li):
 
             mid_real=dic['imid'][iid]
@@ -290,9 +291,11 @@ def train(m):
             aid=env.i_a[iid]
             cur=env.a_idx[aid]
             end=run_game(-1,cur,env.not_quick_roll,mid_real)
+            bar.update(id_+1)
+            quick_roll_save()
 
+        bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
         for id_,iid in enumerate(add_):
-            print('train_roll')
         # for id_,iid in enumerate(df_ins_sum.iid_num.sort_values()):
 
             step=dic['istep'][iid]
@@ -301,6 +304,7 @@ def train(m):
             if id_==0:
                 print(mid_real)
                 print(iid)
+                print('train_roll')
 
             if epoch==1:
                 if id_==3:

@@ -51,12 +51,16 @@ class Env_stat():
                     ,'m_pm':app['m'].astype(float).values
                     ,'pm':app['pm'].astype(float).values
                    }
-
         def init_deploy_state():
             def init_str():
                     x=np.empty_like(np.zeros(shape=(MA_NUM,)),dtype='O')
                     x.fill('')
+                    # x=np.empty_like(self.app_inter['ab_encode'])
+                    # x.fill([])
+                    # x=x[:MA_NUM]
+
                     return x
+
             return {'c':np.zeros(shape=(MA_NUM,))
                     ,'m':np.zeros(shape=(MA_NUM,))
                     ,'a':init_str()
@@ -79,12 +83,14 @@ class Env_stat():
         self.ret_app_infer=[]
 
 
-        self.deploy_state=init_deploy_state()
+        # self.deploy_state=init_deploy_state()
 
         self.mn=df_machine.copy().reset_index()
         self.app=df_app_res.copy()
         self.app_state=df_app_res.copy()
         self.app_inter=df_app_inter.copy()
+
+
         self.verbose=verbose
         self.cur=0
 #         self.cpu_limit=self.mn.cpu.values
@@ -105,6 +111,15 @@ class Env_stat():
         self.a_i,self.a_idx,self.i_a=gen_ai_map(df_ins_sum)
         del df_ins_sum
         gc.collect()
+
+        li=[]
+        a=self.app_inter.aid.apply(lambda x: [self.a_idx[x]]).tolist()
+        b=self.app_inter[['bid','v']].apply(lambda x: [self.a_idx[x.bid]]*(x.v+1),axis=1).tolist()
+        b=pd.Series(b)
+        a=pd.Series(a)
+        self.app_inter['ab_encode']=pd.Series(np.sum([a,b],axis=0))
+
+        self.deploy_state=init_deploy_state()
         # this is base block
         # self.unit_c,self.unit_m,self.unit_d,self.unit_p,self.unit_m,self.unit_pm=get_unit_app_resource(self.app)
         self.unit=get_unit_app_resource(self.app)
@@ -145,9 +160,13 @@ class Env_stat():
 
     def init_deploy_state(self):
         def init_str():
-                x=np.empty_like(np.zeros(shape=(MA_NUM,)),dtype='O')
-                x.fill('')
-                return x
+            # x=np.empty_like(self.app_inter['ab_encode'])
+            # x.fill([])
+            # x=x[:MA_NUM]
+            x=np.empty_like(np.zeros(shape=(MA_NUM,)),dtype='O')
+            x.fill('')
+
+            return x
         return {'c':np.zeros(shape=(MA_NUM,))
                 ,'m':np.zeros(shape=(MA_NUM,))
                 ,'a':init_str()
@@ -384,7 +403,7 @@ class Env_stat():
 
         if choice>self.mn.shape[0]-1:
             return 1,1
-        print(choice,mid_real)
+        # print(choice,mid_real)
         int_mid_real=0
         if mid_real=='ff':
             int_mid_real=-1
@@ -414,7 +433,8 @@ class Env_stat():
                 print(k ,'end')
                 return 1,1
 
-        text=(self.deploy_state['a']+' ').sum()
+        # text=(self.deploy_state['a']+' ').sum()
+        text=self.deploy_state['a'][self.n]
 
         # if self.not_quick_roll==1:
             # if use_ma:
@@ -436,7 +456,7 @@ class Env_stat():
             result.append(proc.apply_async(f,(text,splits[i])))
         for i in range(NUM_PROC):
             if result[i].get()==1:
-                # print('\ninfer end')
+                print('\ninfer end')
                 return 1,1
 
             # result=p.apply_async(self.re_find,(text,app_inter_a))
@@ -706,6 +726,12 @@ class Env_stat():
         self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
         self.ret_app_infer.append(self.deploy_state['a'])
 
+        # if choice_idx_minus!=None:
+        #     print('pass')
+        #     pass
+        #     # self.deploy_state['a'][choice_idx_minus]=''.join(self.deploy_state['a'][choice_idx_minus].split(self.df_a_i.aid[cur],1))
+        # self.ret_app_infer_encode.append(s['mid'].apply(lambda x:[cur] if choice==x else []))
+        # self.ret_app_infer_encode.append(self.deploy_state['a_encode'])
 
         if self.verbose==1:
             threed_view(np.sum(self.ret_v_cpu,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)

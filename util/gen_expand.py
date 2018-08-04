@@ -75,10 +75,17 @@ def re_find_y(text,app_inter):
         if re.findall(g,text):
             for each in v.ab:
                 if re.findall(each,text):
-                    # print(each)
+                    print(each)
                     return 1
     return 0
 
+# def re_find_y(li,app_inter):
+#     print(li[0])
+#     for m in li[:1]:
+#     end=app_inter[['v','ab_encode']].apply(
+#                                     lambda x: [m.count(each) for each in x.ab_encode]==[1,x.v],axis=1).sum()
+#     if end:
+#         return 1
 def re_find_x(text,a=1):
     import re
     p=re.compile('(\s+)')
