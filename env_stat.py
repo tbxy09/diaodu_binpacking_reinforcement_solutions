@@ -9,8 +9,7 @@ MA_NUM=6000
 APP_NUM=9338
 # INST_NUM=68219
 # INST_NUM=68224
-NUM_PROC=2
-NUM_LIFE=100
+NUM_PROC=12
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):

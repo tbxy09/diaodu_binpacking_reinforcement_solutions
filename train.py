@@ -21,7 +21,7 @@ from preprocess import Preprocess
 from preprocess import en_vec
 from env_stat import Env_stat
 from keras.utils import Progbar
-from env_stat import MA_NUM,APP_NUM,NUM_PROC,NUM_LIFE
+from env_stat import MA_NUM,APP_NUM,NUM_PROC
 from collections import OrderedDict
 from itertools import count
 from multiprocessing import Pool
@@ -50,10 +50,12 @@ print(args.gamma)
 
 print('train')
 inst_num_dic={'a':68219,'b':68224}
+num_life={'a':30000,'b':15000}
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
 roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
 base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
 INST_NUM=inst_num_dic[args.ab]
+NUM_LIFE=num_life[args.ab]
 torch.manual_seed(args.seed)
 
 pre_processor=Preprocess(base_dic[args.ab])
@@ -272,8 +274,8 @@ def train(m):
         checkpoint=torch.load(roll_file_dic[args.ab])
         env.load_checkpoints(checkpoint['env_dic'])
         if args.fn:
-            checkpoint=torch.load(arg.fn)
-            m.load_state_dict(checkpoint['state_dic'])
+            checkpoint=torch.load(args.fn)
+            m.load_state_dict(checkpoint['state_dict'])
         # this is the place to load the policy checkpoint
 
 
