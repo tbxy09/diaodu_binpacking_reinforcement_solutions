@@ -50,7 +50,7 @@ print(args.gamma)
 
 print('train')
 inst_num_dic={'a':68219,'b':68224}
-num_life={'b':30000,'a':15000}
+num_life={'b':3000,'a':1500}
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
 roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
 base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
@@ -66,7 +66,7 @@ proc=Pool(NUM_PROC)
 
 
 env=Env_stat(df_machine,df_app_res,df_app_inter,df_ins_sum,verbose=0)
-del df_machine,df_app_res,df_app_inter
+del df_machine,df_app_res,df_app_inter,df_ins_sum
 gc.collect()
 
 
@@ -166,7 +166,8 @@ def run_game(choice,cur,not_quick_roll,mid_real='ff'):
             # ret_=ret_+each
 
     #     print(ret_)
-        m.save_logprob(loss,reward)
+        if reward:
+            m.save_logprob(loss,reward)
     return end
 
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)*rewards
@@ -271,11 +272,18 @@ def train(m):
         env.reset()
 
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
+        print('load deployed env state after env reset')
         checkpoint=torch.load(roll_file_dic[args.ab])
         env.load_checkpoints(checkpoint['env_dic'])
-        if args.fn:
-            checkpoint=torch.load(args.fn)
-            m.load_state_dict(checkpoint['state_dict'])
+        del checkpoint
+        gc.collect()
+        if epoch==1:
+            print('loading the save model file')
+            if args.fn:
+                checkpoint=torch.load(args.fn)
+                m.load_state_dict(checkpoint['state_dict'])
+                del checkpoint
+                gc.collect()
         # this is the place to load the policy checkpoint
 
 
@@ -313,7 +321,7 @@ def train(m):
                 print('\n')
                 print(mid_real,iid)
 
-            if epoch==1:
+            if epoch==2:
                 if id_==300:
                     print('xy')
                     # ipdb.set_trace()
@@ -361,7 +369,8 @@ def train(m):
                 if (update_id+1)%args.dump_interval==0:
                     save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
                 if (update_id+1)%100==0:
-                    print(len(iid_li))
+                    # print(len(iid_li))
+                    pass
             if (len(iid_li)-origin_len) >NUM_LIFE:
                 print('\nlen break')
                 break
@@ -441,6 +450,8 @@ def train(m):
             loss = torch.cat(loss_li).sum()
 
             log_saved.append(loss.data.numpy())
+
+            del loss_li[:]
 
             # if loss_old==loss:
                 # print('loss stay the same')
