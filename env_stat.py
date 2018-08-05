@@ -9,7 +9,8 @@ MA_NUM=6000
 APP_NUM=9338
 # INST_NUM=68219
 INST_NUM=68224
-NUM_PROC=12
+NUM_PROC=2
+NUM_LIFE=100
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):
@@ -213,11 +214,13 @@ class Env_stat():
         gc.collect()
 
     def load_checkpoints(self,dic):
-        self.li_cpu=dic['li_cpu']
-        self.li_mem=dic['li_mem']
-        self.ret_v_cpu=dic['ret_v_cpu']
-        self.ret_v_mem=dic['ret_v_mem']
-        self.ret_app_infer=dic['ret_app_infer']
+        # self.li_cpu=dic['li_cpu']
+        # self.li_mem=dic['li_mem']
+        # self.ret_v_cpu=dic['ret_v_cpu']
+        # self.ret_v_mem=dic['ret_v_mem']
+        # self.ret_app_infer=dic['ret_app_infer']
+        self.matrix=dic['matrix']
+        self.deploy_state=dic['deploy_state']
 
     def pack_plot(self,li,axis=0,verbose=0):
         v_=np.sum(li,axis=axis)
@@ -428,10 +431,11 @@ class Env_stat():
         self.env_matrix(cur)
 
         for k in  ['c','m','d','p_pm','m_pm','pm']:
-            if any(self.deploy_state[k]>1):
-                print('\n')
-                print(k ,'end')
-                return 1,1
+            # if any(self.deploy_state[k]>1):
+            if self.deploy_state[k][self.n]>1:
+                # print('\n')
+                # print(k ,'end')
+                return 0,1
 
         # text=(self.deploy_state['a']+' ').sum()
         text=self.deploy_state['a'][self.n]
@@ -446,18 +450,20 @@ class Env_stat():
 
             # startf=time.time()
             # end=self.re_find(text,0)
-        qsplit=self.app_inter
-        unit=(len(qsplit)-len(qsplit)%NUM_PROC)/NUM_PROC
-        splits=proc_split(qsplit,unit,NUM_PROC)
+        ignore=0
+        if not ignore:
+            qsplit=self.app_inter
+            unit=(len(qsplit)-len(qsplit)%NUM_PROC)/NUM_PROC
+            splits=proc_split(qsplit,unit,NUM_PROC)
 
-        result=[]
+            result=[]
 
-        for i in range(NUM_PROC):
-            result.append(proc.apply_async(f,(text,splits[i])))
-        for i in range(NUM_PROC):
-            if result[i].get()==1:
-                print('\ninfer end')
-                return 1,1
+            for i in range(NUM_PROC):
+                result.append(proc.apply_async(f,(text,splits[i])))
+            for i in range(NUM_PROC):
+                if result[i].get()==1:
+                    # print('\ninfer end')
+                    return 0,1
 
             # result=p.apply_async(self.re_find,(text,app_inter_a))
             # result.get()

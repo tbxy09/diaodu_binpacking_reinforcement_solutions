@@ -21,7 +21,7 @@ from preprocess import Preprocess
 from preprocess import en_vec
 from env_stat import Env_stat
 from keras.utils import Progbar
-from env_stat import MA_NUM,APP_NUM,INST_NUM,NUM_PROC
+from env_stat import MA_NUM,APP_NUM,INST_NUM,NUM_PROC,NUM_LIFE
 from collections import OrderedDict
 from itertools import count
 from multiprocessing import Pool
@@ -256,48 +256,39 @@ def train(m):
         load_checkpoints()
 
     for epoch in count(1):
-        # m.logprob_history=[]
-        # m.rewards=[]
+
+        m.logprob_history=[]
+        m.rewards=[]
         env.reset()
+
+        checkpoint=torch.load('./policyquick_roll.pth.tar')
+        env.load_checkpoints(checkpoint['env_dic'])
         # this is the place to load the policy checkpoint
 
-        bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
 
         # _,df_ins_sum['iid_num']=df_ins_sum.iid.str.split('_').str
         # df_ins_sum['iid_num']=df_ins_sum['iid_num'].astype(int)
 
         # df_ins_sum.iid_num.sort_values()
         # for id_,(iid,mid) in enumerate(dic['im'].items()):
+
         iid_li=df_ins[df_ins.mid.notnull()].iid.tolist()
+        origin_len=len(iid_li)
         df_ins_copy=df_ins.copy()
         df_ins_copy.mid.fillna('',inplace=True)
-        #shuffle the add
         add_=df_ins_copy.sort_values(ascending=False,by='mid').iid.tolist()
+
         del df_ins_copy
         gc.collect()
-        # iid_li=iid_li+add_
-        # for id_,iid in enumerate(df_ins.iid.values):
+
+        bar=Progbar(target=len(iid_li)+100,width=30,interval=0.05)
         update_id=0
-
-        bar=Progbar(target=len(iid_li),width=30,interval=0.05)
+        log_iid='ff'
         for id_,iid in enumerate(iid_li):
-
-            mid_real=dic['imid'][iid]
-            if id_==0:
-                print(mid_real)
-                print(iid)
-                print('deployed_roll')
-
-            aid=env.i_a[iid]
-            cur=env.a_idx[aid]
-            end=run_game(-1,cur,env.not_quick_roll,mid_real)
-            bar.update(id_+1)
-            quick_roll_save()
-
-        bar=Progbar(target=len(env.i_a),width=30,interval=0.05)
-        for id_,iid in enumerate(add_):
         # for id_,iid in enumerate(df_ins_sum.iid_num.sort_values()):
 
+            # del m.logprob_history[:]
+            # del m.rewards[:]
             step=dic['istep'][iid]
             mid_real=dic['imid'][iid]
             # print(mid_real)
@@ -305,9 +296,12 @@ def train(m):
                 print(mid_real)
                 print(iid)
                 print('train_roll')
+            if iid==log_iid:
+                print('\n')
+                print(mid_real,iid)
 
             if epoch==1:
-                if id_==3:
+                if id_==300:
                     print('xy')
                     # ipdb.set_trace()
                     # pass
@@ -355,7 +349,7 @@ def train(m):
                     save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
                 if (update_id+1)%100==0:
                     print(len(iid_li))
-            if (len(iid_li)-INST_NUM) >int(INST_NUM/2):
+            if (len(iid_li)-origin_len) >NUM_LIFE:
                 print('\nlen break')
                 break
 
@@ -364,7 +358,14 @@ def train(m):
                 # iid_li.remove(iid)
                 # if dic['imid'][iid]!=-1:
                 #     iid_li.insert(id_+1,iid)
+                if log_iid=='ff':
+                    print(dic['imid'][iid])
+                dic['imid'][iid]=env.mn.mid[env.n]
+                if log_iid=='ff':
+                    log_iid=iid
+                    print(dic['imid'][iid])
                 iid_li.append(iid)
+                bar.update(id_)
                 # print(iid)
                 # print(dic['im'][iid])
                 # print(dic['im'][iid])
@@ -374,7 +375,7 @@ def train(m):
                 dic['imid'][iid]=env.mn.mid[env.n]
                 dic['iid'][id_]=iid
                 update_id=update_id+1
-                bar.update(update_id)
+                # bar.update(update_id)
 
             # del m.logprob_history[:]
             # del m.rewards[:]
@@ -449,7 +450,29 @@ def train(m):
                 del m.logprob_history[:]
                 del m.rewards[:]
                 dic_init()
+def deploy_roll():
+    iid_li=df_ins[df_ins.mid.notnull()].iid.tolist()
+    df_ins_copy=df_ins.copy()
+    df_ins_copy.mid.fillna('',inplace=True)
+    #shuffle the add
+    # add_=df_ins_copy.sort_values(ascending=False,by='mid').iid.tolist()
+    del df_ins_copy
+    gc.collect()
 
+    bar=Progbar(target=len(iid_li),width=30,interval=0.05)
+    for id_,iid in enumerate(iid_li):
+
+        mid_real=dic['imid'][iid]
+        if id_==0:
+            print(mid_real)
+            print(iid)
+            print('deployed_roll')
+
+        aid=env.i_a[iid]
+        cur=env.a_idx[aid]
+        end=run_game(-1,cur,env.not_quick_roll,mid_real)
+        bar.update(id_+1)
+    quick_roll_save()
 
 def quick_roll():
     print('quick_roll')
