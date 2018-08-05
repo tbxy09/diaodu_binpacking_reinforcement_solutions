@@ -449,7 +449,7 @@ def train(m):
             print('\n---------------------------')
             print(loss)
             print('\n---------------------------')
-            print(playing_len)
+            print(playing_len,len(rewards),update_id)
             print('---------------------------')
             if epoch%1==0:
                 optimizer.zero_grad()
