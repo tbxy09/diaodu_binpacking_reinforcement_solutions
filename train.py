@@ -21,7 +21,7 @@ from preprocess import Preprocess
 from preprocess import en_vec
 from env_stat import Env_stat
 from keras.utils import Progbar
-from env_stat import MA_NUM,APP_NUM,INST_NUM,NUM_PROC,NUM_LIFE
+from env_stat import MA_NUM,APP_NUM,NUM_PROC,NUM_LIFE
 from collections import OrderedDict
 from itertools import count
 from multiprocessing import Pool
@@ -30,11 +30,13 @@ import ipdb
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
+parser.add_argument('--inst-num',type=int,default=0)
 parser.add_argument('--verbose',type=int,default=1)
 parser.add_argument('--fn',type=str,default='')
 parser.add_argument('--base',type=str,default='')
 parser.add_argument('--use-cache',type=int,default=0)
 parser.add_argument('--run-id',type=str,default='')
+parser.add_argument('--ab',type=str,default='')
 parser.add_argument('--log-interval', type=int, default=8, metavar='N',
                     help='interval between training status logs (default: 10)')
 parser.add_argument('--dump-interval', type=int, default=500, metavar='N',
@@ -47,9 +49,14 @@ verbose=args.verbose
 print(args.gamma)
 
 print('train')
+inst_num_dic={'a':68219,'b':68224}
+        # checkpoint=torch.load('./policyquick_roll.pth.tar')
+roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
+base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
+INST_NUM=inst_num_dic[args.ab]
 torch.manual_seed(args.seed)
 
-pre_processor=Preprocess(args.base)
+pre_processor=Preprocess(base_dic[args.ab])
 df_app_res,df_machine,df_ins,df_app_inter,df_ins_sum=pre_processor.run_pre()
 del pre_processor
 gc.collect()
@@ -261,7 +268,8 @@ def train(m):
         m.rewards=[]
         env.reset()
 
-        checkpoint=torch.load('./policyquick_roll.pth.tar')
+        # checkpoint=torch.load('./policyquick_roll.pth.tar')
+        checkpoint=torch.load(roll_file_dic[args.ab])
         env.load_checkpoints(checkpoint['env_dic'])
         # this is the place to load the policy checkpoint
 
