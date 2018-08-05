@@ -271,6 +271,9 @@ def train(m):
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
         checkpoint=torch.load(roll_file_dic[args.ab])
         env.load_checkpoints(checkpoint['env_dic'])
+        if args.fn:
+            checkpoint=torch.load(arg.fn)
+            m.load_state_dict(checkpoint['state_dic'])
         # this is the place to load the policy checkpoint
 
 
@@ -449,7 +452,7 @@ def train(m):
             print('\n---------------------------')
             print(loss)
             print('\n---------------------------')
-            print(playing_len,len(rewards),update_id)
+            print(playing_len,len(rewards),update_id,env.counter[0],env.counter[1])
             print('---------------------------')
             if epoch%1==0:
                 optimizer.zero_grad()

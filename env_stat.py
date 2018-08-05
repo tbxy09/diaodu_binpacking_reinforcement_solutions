@@ -83,6 +83,8 @@ class Env_stat():
         self.ret_v_cpu_mean=[]
         self.ret_app_infer=[]
 
+        self.counter=[0,0]
+
 
         # self.deploy_state=init_deploy_state()
 
@@ -247,6 +249,7 @@ class Env_stat():
         self.li_p=[]
         self.li_m=[]
         self.li_pm=[]
+        self.counter=[0,0]
 
         # self.dic={}
         self.init_matrix()
@@ -435,6 +438,7 @@ class Env_stat():
             if self.deploy_state[k][self.n]>1:
                 # print('\n')
                 # print(k ,'end')
+                self.counter[0]=self.counter[0]+1
                 return 0,1
 
         # text=(self.deploy_state['a']+' ').sum()
@@ -463,6 +467,9 @@ class Env_stat():
             for i in range(NUM_PROC):
                 if result[i].get()==1:
                     # print('\ninfer end')
+                    # print('\ninfer end')
+                    self.counter[1]=self.counter[1]+1
+
                     return 0,1
 
             # result=p.apply_async(self.re_find,(text,app_inter_a))

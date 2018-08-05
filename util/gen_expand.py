@@ -208,7 +208,7 @@ def ck_parser(fn,m,env_stat=None):
 
     # r=ck['rewards']
     log_prob=ck['saved_log_probs']
-    mid=ck['mid']
+    mid=ck['step']
     iid=ck['iid']
     if env_stat:
         env_stat.matrix=ck['env_dic']['matrix']
