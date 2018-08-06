@@ -39,7 +39,7 @@ parser.add_argument('--run-id',type=str,default='')
 parser.add_argument('--ab',type=str,default='')
 parser.add_argument('--log-interval', type=int, default=8, metavar='N',
                     help='interval between training status logs (default: 10)')
-parser.add_argument('--dump-interval', type=int, default=500, metavar='N',
+parser.add_argument('--dump-interval', type=int, default=2000, metavar='N',
                     help='interval between training status logs (default: 10)')
 parser.add_argument('--gamma', type=float, default=0.89, metavar='G',
                     help='discount factor (default: 0.99)')
@@ -121,8 +121,9 @@ def save_checkpoints(rewards,log_probs,e,iid,id_,run_id):
     if run_id not in os.listdir('/data2/run/'):os.mkdir('/data2/run/'+run_id)
     fn='/data2/run/{0}/policy{1}.pth.tar'.format(run_id,e)
     dic['saved_log_probs']=log_probs
+    env.save_checkpoints()
     # dic['rewards']=rewards
-    # dic['env_dic']=env.dic
+    dic['env_dic']=env.dic
     dic['state_dict']=m.state_dict()
     # dic['iid']=iid
     # dic['id_']=id_
@@ -265,7 +266,8 @@ def train(m):
 
         load_checkpoints()
 
-    for epoch in count(1):
+    # for epoch in count(1):
+    for epoch in range(1):
 
         m.logprob_history=[]
         m.rewards=[]
@@ -277,7 +279,7 @@ def train(m):
         env.load_checkpoints(checkpoint['env_dic'])
         del checkpoint
         gc.collect()
-        if epoch==1:
+        if epoch==0:
             print('loading the save model file')
             if args.fn:
                 checkpoint=torch.load(args.fn)
@@ -459,9 +461,9 @@ def train(m):
                 # m=Policy()
                 # optimizer=Adam(m.parameters(),lr=0.015)
             # if epoch%args.log_interval==0:
-            if verbose:
-                if epoch%3==0:
-                    save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+            # if verbose:
+            #     if epoch%1==0:
+            #         save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
             print('\n---------------------------')
             print(loss)
             print('\n---------------------------')
@@ -471,6 +473,7 @@ def train(m):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+                save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
                 del m.logprob_history[:]
                 del m.rewards[:]
                 dic_init()
