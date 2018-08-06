@@ -7,9 +7,11 @@ import time
 
 MA_NUM=6000
 APP_NUM=9338
+
 # INST_NUM=68219
 # INST_NUM=68224
-NUM_PROC=2
+
+NUM_PROC=12
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):
@@ -473,14 +475,26 @@ class Env_stat():
 
             for i in range(NUM_PROC):
                 # result.append(proc.apply_async(f,(text,splits[i])))
-                result.append(proc.apply_async(f,(text,m,self.deploy_state['a_encode'][self.n],splits[i])))
-            for i in range(NUM_PROC):
-                if result[i].get()==1:
-                    # print('\ninfer end')
-                    # print('\ninfer end')
-                    self.counter[1]=self.counter[1]+1
+                result.append(proc.apply_async(f,(text,m,self.n,self.deploy_state,splits[i])))
 
-                    return 0,1
+            end_flag=0
+
+            for i in range(NUM_PROC):
+                end,v=result[i].get()
+                # if result[i].get()==1:
+                if end:
+                    end_flag=1
+                    # print('\ninfer end')
+                    # print('\ninfer end')
+
+                    # print(v)
+                    self.counter[1]=self.counter[1]+1
+                if v>self.deploy_state['a_encode'][self.n]:
+                    self.deploy_state['a_encode'][self.n]=v
+
+            if end_flag:
+                return 0,1
+                # if result[i].get()==1:
 
             # result=p.apply_async(self.re_find,(text,app_inter_a))
             # result.get()

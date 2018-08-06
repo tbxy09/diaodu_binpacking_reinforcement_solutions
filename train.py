@@ -370,10 +370,12 @@ def train(m):
             # for each in ['c','m','d','p_pm','m_pm','pm','cm','a']:
                 # assert env.deploy_state[each].shape==(MA_NUM,)
 
-            e='_'.join([str(epoch),str(iid)])
+            # e='_'.join([str(epoch),str(iid)])
             if verbose:
                 if (update_id+1)%args.dump_interval==0:
+                    e='_'.join([str(epoch),str(id_)])
                     save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
+                    print(m.rewards[0],m.logprob_history[0])
                     del m.rewards[:]
                     del m.logprob_history[:]
                 if (update_id+1)%100==0:
@@ -446,30 +448,30 @@ def train(m):
             # log_rewards.append(rewards.data.numpy())
 
             rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-            # print('\nrewards:{}'.format(rewards))
             rewards = rewards/10
-            # print('\nrewards:{}'.format(rewards))
 
-            # log_rewards.append(rewards.data.numpy())
-
-        #     print('the overall reward{}'.format(rewards))
-        #     rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-        #     print(rewards)
             loss_li=[]
+
             # log_saved.append(m.logprob_history.data.numpy())
             # log_saved.append(torch.cat(m.logprob_history).data.numpy())
 
-            # fn=first_try('./','policy{}_inst*'.format(epoch))
-            # for each in fn:
-            #     loader= torch.load(each)
-            #     for log_prob,r in zip(loader['log_prob'],loader['rewards'])
-            #         loss_li.append(-logprob*r)
+            fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
+            fn.sort()
+            for i_,each in enumerate(fn):
+                print(each)
+                loader= torch.load(str(each))
 
-            # loss = torch.cat(loss_li).sum()
+                print('============')
+                print(loader['saved_log_probs'][0],rewards[0+i_*len(loader['saved_log_probs'])])
+                print('============')
 
-            # del loader
-            # gc.collect()
-            # del loss_li[:]
+                for log_prob,r in zip(loader['saved_log_probs'],rewards[i_:(i_+1)*len(loader['saved_log_probs'])]):
+                    loss_li.append(-log_prob*r)
+
+
+            loss = torch.cat(loss_li).sum()
+
+            loss_li=[]
 
             for log_prob,r in zip(m.logprob_history,rewards):
                 loss_li.append(-log_prob*r)
@@ -534,6 +536,7 @@ def deploy_roll():
         cur=env.a_idx[aid]
         end=run_game(-1,cur,env.not_quick_roll,mid_real)
         bar.update(id_+1)
+    print(env.counter)
     quick_roll_save()
 
 def quick_roll():

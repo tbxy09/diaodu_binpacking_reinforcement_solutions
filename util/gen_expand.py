@@ -87,12 +87,12 @@ def re_find_y(text,app_inter):
 #         return 1
 
 # def re_find_y(text,m,app_inter,n,deploy_state):
-def re_find_y(text,m,deploy_state_a,app_inter):
+def re_find_y(text,m,n,deploy_state,app_inter):
     import re
     # p=re.compile('(\s+)')
     # text=p.sub(' ',text)
 
-    deploy_state_a=app_inter[['v','ab_encode']].apply(
+    ret=app_inter[['v','ab_encode']].apply(
         lambda x: sum([m.count(each) for each in set(x.ab_encode)]),axis=1).max()
 
     for g,v in app_inter.groupby('aid') :
@@ -100,8 +100,8 @@ def re_find_y(text,m,deploy_state_a,app_inter):
             for each in v.ab:
                 if re.findall(each,text):
                     # print(each)
-                    return 1
-    return 0
+                    return 1,ret
+    return 0,ret
 # def re_find_y(m,app_inter):
 #     return app_inter[['v','ab_encode']].apply(
 #         lambda x: sum([m.count(each) for each in set(x.ab_encode)]),axis=1).max()
