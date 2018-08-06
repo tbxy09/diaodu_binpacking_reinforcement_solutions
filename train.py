@@ -382,24 +382,34 @@ def train(m):
                 # iid_li.remove(iid)
                 # if dic['imid'][iid]!=-1:
                 #     iid_li.insert(id_+1,iid)
+
                 if log_iid=='ff':
                     print(dic['imid'][iid])
+
                 dic['imid'][iid]=env.mn.mid[env.n]
+
                 if log_iid=='ff':
                     log_iid=iid
                     print(dic['imid'][iid])
+
                 iid_li.append(iid)
-                bar.update(id_)
+                # bar.update(id_)
                 # print(iid)
                 # print(dic['im'][iid])
                 # print(dic['im'][iid])
             else:
 
-                dic['step'][id_]=step
+                # dic['step'][id_]=step
                 dic['imid'][iid]=env.mn.mid[env.n]
-                dic['iid'][id_]=iid
+                # dic['iid'][id_]=iid
                 update_id=update_id+1
                 # bar.update(update_id)
+
+            dic['iid'][id_]=iid
+            dic['mid'][id_]=env.mn.mid[env.n]
+            # dic['imid'][iid]=env.mn.mid[env.n]
+
+            bar.update(id_)
 
             # del m.logprob_history[:]
             # del m.rewards[:]
