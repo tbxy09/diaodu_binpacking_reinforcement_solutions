@@ -267,7 +267,7 @@ def train(m):
         load_checkpoints()
 
     # for epoch in count(1):
-    for epoch in range(1):
+    for epoch in range(3):
 
         m.logprob_history=[]
         m.rewards=[]
