@@ -86,6 +86,7 @@ def dic_init(fn=None):
         dic['saved_log_probs']=[]
         dic['rewards'] =[]
         dic['iid']=pd.Series(np.array(['']*INST_NUM))
+        dic['mid']=pd.Series(np.array(['']*INST_NUM))
         dic['id_']=-1
         dic['step']=pd.Series(np.ones(INST_NUM,dtype=int)*-1)
         dic['aid']=pd.Series(np.array(['']*INST_NUM))
@@ -120,10 +121,13 @@ def quick_roll_save(e='quick_roll'):
 def save_checkpoints(rewards,log_probs,e,iid,id_,run_id):
     if run_id not in os.listdir('/data2/run/'):os.mkdir('/data2/run/'+run_id)
     fn='/data2/run/{0}/policy{1}.pth.tar'.format(run_id,e)
-    dic['saved_log_probs']=log_probs
+    # dic['saved_log_probs']=log_probs
     env.save_checkpoints()
     # dic['rewards']=rewards
     dic['env_dic']=env.dic
+    # dic['saved_log_probs']=log_probs.data.numpy()
+    dic['rewards']=rewards
+    # dic['env_dic']=env.dic
     dic['state_dict']=m.state_dict()
     # dic['iid']=iid
     # dic['id_']=id_
@@ -370,6 +374,8 @@ def train(m):
             if verbose:
                 if (update_id+1)%args.dump_interval==0:
                     save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
+                    del m.rewards[:]
+                    del m.logprob_history[:]
                 if (update_id+1)%100==0:
                     # print(len(iid_li))
                     pass
@@ -452,14 +458,29 @@ def train(m):
             loss_li=[]
             # log_saved.append(m.logprob_history.data.numpy())
             # log_saved.append(torch.cat(m.logprob_history).data.numpy())
+
+            # fn=first_try('./','policy{}_inst*'.format(epoch))
+            # for each in fn:
+            #     loader= torch.load(each)
+            #     for log_prob,r in zip(loader['log_prob'],loader['rewards'])
+            #         loss_li.append(-logprob*r)
+
+            # loss = torch.cat(loss_li).sum()
+
+            # del loader
+            # gc.collect()
+            # del loss_li[:]
+
             for log_prob,r in zip(m.logprob_history,rewards):
                 loss_li.append(-log_prob*r)
+
+            loss=torch.add(loss,torch.cat(loss_li).sum())
         #     print(m.logprob_history)
         #     print(loss_li)
 
             # log_saved.append(torch.cat(loss_li).data.numpy())
 
-            loss = torch.cat(loss_li).sum()
+            # loss = torch.cat(loss_li).sum()
 
             log_saved.append(loss.data.numpy())
 
@@ -488,6 +509,10 @@ def train(m):
                 del m.rewards[:]
                 dic_init()
 def deploy_roll():
+    dic_init()
+    m.logprob_history=[]
+    m.rewards=[]
+    env.reset()
     iid_li=df_ins[df_ins.mid.notnull()].iid.tolist()
     df_ins_copy=df_ins.copy()
     df_ins_copy.mid.fillna('',inplace=True)
@@ -581,6 +606,7 @@ if args.non_roll:
 #       for p in processes:
 #           p.join()
 else:
-    quick_roll()
-    quick_roll_save()
+    # quick_roll()
+    # quick_roll_save()
+    deploy_roll()
 # train()

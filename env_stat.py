@@ -9,7 +9,7 @@ MA_NUM=6000
 APP_NUM=9338
 # INST_NUM=68219
 # INST_NUM=68224
-NUM_PROC=12
+NUM_PROC=2
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):
@@ -51,25 +51,26 @@ class Env_stat():
                     ,'m_pm':app['m'].astype(float).values
                     ,'pm':app['pm'].astype(float).values
                    }
-        def init_deploy_state():
-            def init_str():
-                    x=np.empty_like(np.zeros(shape=(MA_NUM,)),dtype='O')
-                    x.fill('')
-                    # x=np.empty_like(self.app_inter['ab_encode'])
-                    # x.fill([])
-                    # x=x[:MA_NUM]
+        # def init_deploy_state():
+        #     def init_str():
+        #             x=np.empty_like(np.zeros(shape=(MA_NUM,)),dtype='O')
+        #             x.fill('')
+        #             # x=np.empty_like(self.app_inter['ab_encode'])
+        #             # x.fill([])
+        #             # x=x[:MA_NUM]
 
-                    return x
+        #             return x
 
-            return {'c':np.zeros(shape=(MA_NUM,))
-                    ,'m':np.zeros(shape=(MA_NUM,))
-                    ,'a':init_str()
-                    ,'d':np.zeros(shape=(MA_NUM,))
-                    ,'cm':np.zeros(shape=(MA_NUM,))
-                    ,'p_pm':np.zeros(shape=(MA_NUM,))
-                    ,'m_pm':np.zeros(shape=(MA_NUM,))
-                    ,'pm':np.zeros(shape=(MA_NUM,))
-                    }
+        #     return {'c':np.zeros(shape=(MA_NUM,))
+        #             ,'m':np.zeros(shape=(MA_NUM,))
+        #             ,'a':init_str()
+        #             ,'a_encode':np.zeros(shape=(MA_NUM,))
+        #             ,'d':np.zeros(shape=(MA_NUM,))
+        #             ,'cm':np.zeros(shape=(MA_NUM,))
+        #             ,'p_pm':np.zeros(shape=(MA_NUM,))
+        #             ,'m_pm':np.zeros(shape=(MA_NUM,))
+        #             ,'pm':np.zeros(shape=(MA_NUM,))
+        #             }
         self.n=0
         self.i=0
         # print(self.p)
@@ -121,7 +122,7 @@ class Env_stat():
         a=pd.Series(a)
         self.app_inter['ab_encode']=pd.Series(np.sum([a,b],axis=0))
 
-        self.deploy_state=init_deploy_state()
+        self.deploy_state=self.init_deploy_state()
         # this is base block
         # self.unit_c,self.unit_m,self.unit_d,self.unit_p,self.unit_m,self.unit_pm=get_unit_app_resource(self.app)
         self.unit=get_unit_app_resource(self.app)
@@ -172,6 +173,7 @@ class Env_stat():
         return {'c':np.zeros(shape=(MA_NUM,))
                 ,'m':np.zeros(shape=(MA_NUM,))
                 ,'a':init_str()
+                ,'a_encode':np.zeros(shape=(MA_NUM,))
                 ,'d':np.zeros(shape=(MA_NUM,))
                 ,'cm':np.zeros(shape=(MA_NUM,))
                 ,'p_pm':np.zeros(shape=(MA_NUM,))
@@ -342,7 +344,9 @@ class Env_stat():
         #         return 1,1
 
         # text=(self.env_app+' ').sum()
+
         text=(self.deploy_state['a']+' ').sum()
+
 
         # ab=self.app_inter.ab.sort_values()
         # r=self.app_inter[['ab']].apply(lambda x: re.findall(x.ab,text),axis=1)
@@ -431,6 +435,8 @@ class Env_stat():
 
 
         self.env_matrix(cur)
+        # if not self.not_quick_roll:
+            # return 1,0
 
         for k in  ['c','m','d','p_pm','m_pm','pm']:
             # if any(self.deploy_state[k]>1):
@@ -441,7 +447,11 @@ class Env_stat():
                 return 0,1
 
         # text=(self.deploy_state['a']+' ').sum()
+
         text=self.deploy_state['a'][self.n]
+
+        li_=self.deploy_state['a'][self.n].split('app_')[1:]
+        m=pd.Series(li_,dtype=int).tolist()
 
         # if self.not_quick_roll==1:
             # if use_ma:
@@ -462,7 +472,8 @@ class Env_stat():
             result=[]
 
             for i in range(NUM_PROC):
-                result.append(proc.apply_async(f,(text,splits[i])))
+                # result.append(proc.apply_async(f,(text,splits[i])))
+                result.append(proc.apply_async(f,(text,m,self.deploy_state['a_encode'][self.n],splits[i])))
             for i in range(NUM_PROC):
                 if result[i].get()==1:
                     # print('\ninfer end')
@@ -757,6 +768,7 @@ class Env_stat():
         return {'c':np.sum(self.ret_v_cpu,0)
                 ,'m':np.sum(self.ret_v_mem,0)
                 ,'a':np.sum(self.ret_app_infer,0)
+                ,'a_encode':self.deploy_state['a_encode']
                 ,'cm':np.sum(self.ret_v_cpu_mean,0)
                 ,'d':np.sum(self.ret_v_disk,0)
                 ,'p_pm':np.sum(self.ret_v_p,0)

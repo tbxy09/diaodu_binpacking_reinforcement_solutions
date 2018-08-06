@@ -80,12 +80,37 @@ def re_find_y(text,app_inter):
     return 0
 
 # def re_find_y(li,app_inter):
-#     print(li[0])
-#     for m in li[:1]:
+#     m=li
 #     end=app_inter[['v','ab_encode']].apply(
-#                                     lambda x: [m.count(each) for each in x.ab_encode]==[1,x.v],axis=1).sum()
+#                                     lambda x: [m.count(each) for each in set(x.ab_encode)]==[1,x.v],axis=1).sum()
 #     if end:
 #         return 1
+
+# def re_find_y(text,m,app_inter,n,deploy_state):
+def re_find_y(text,m,deploy_state_a,app_inter):
+    import re
+    # p=re.compile('(\s+)')
+    # text=p.sub(' ',text)
+
+    deploy_state_a=app_inter[['v','ab_encode']].apply(
+        lambda x: sum([m.count(each) for each in set(x.ab_encode)]),axis=1).max()
+
+    for g,v in app_inter.groupby('aid') :
+        if re.findall(g,text):
+            for each in v.ab:
+                if re.findall(each,text):
+                    # print(each)
+                    return 1
+    return 0
+# def re_find_y(m,app_inter):
+#     return app_inter[['v','ab_encode']].apply(
+#         lambda x: sum([m.count(each) for each in set(x.ab_encode)]),axis=1).max()
+
+def li_gen(i,deploy_state):
+    li_=deploy_state['a'][i].split('app_')[1:]
+    li_=pd.Series(li_,dtype=int).tolist()
+    return li_
+
 def re_find_x(text,a=1):
     import re
     p=re.compile('(\s+)')
@@ -208,12 +233,14 @@ def ck_parser(fn,m,env_stat=None):
 
     # r=ck['rewards']
     log_prob=ck['saved_log_probs']
-    mid=ck['step']
+    # mid=ck['step']
+    mid=ck['imid']
     iid=ck['iid']
     if env_stat:
         env_stat.matrix=ck['env_dic']['matrix']
         env_stat.deploy_state=ck['env_dic']['deploy_state']
-        return log_prob,[mid[i] for i in range(68219) if mid[i]!=-1], [iid[i] for i in range(68219) if iid[i]!='']
+        # return log_prob,[mid[i] for i in range(68219) if mid[i]!=-1], [iid[i] for i in range(68219) if iid[i]!='']
+        return mid,iid
     # aid=ck['aid']
     # id_=ck['id_']
     state_dict=ck['state_dict']
