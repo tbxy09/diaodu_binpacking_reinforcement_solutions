@@ -40,7 +40,8 @@ class Policy(nn.Module):
         # self.fc2=nn.Linear(28,6)
         # self.fc3=nn.Linear(99,10)
         # self.fc4=nn.Linear(1248,1000)
-        self.fc4=nn.Linear(5832,6000)
+        # self.fc4=nn.Linear(5832,6000)
+        self.fc4=nn.Linear(6804,6000)
         self.relu = nn.ReLU(inplace=True)
         # self.net=nn.Sequential(mm1,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
         # self.netb=nn.Sequential(mm1b,bn1,mm2,bn2,mm3,bn3,mm4,bn4)
@@ -134,8 +135,8 @@ class Policy(nn.Module):
         # self.logprob_history.append(
         return self.o_.log_prob(choice)
 
-    def save_logprob(self,loss,reward):
-        self.logprob_history.append(loss)
+    def save_logprob(self,choice,reward):
+        self.logprob_history.append(self.get_logprob(choice))
         self.rewards.append(reward)
 
 class PolicyX(Policy):

@@ -466,6 +466,7 @@ class Env_stat():
             # startf=time.time()
             # end=self.re_find(text,0)
         ignore=0
+
         if not ignore:
             qsplit=self.app_inter
             unit=(len(qsplit)-len(qsplit)%NUM_PROC)/NUM_PROC
@@ -820,7 +821,8 @@ class Env_stat():
                    'd':self.deploy_state['d']*self.mn.disk,
                    'p_pm':self.deploy_state['p_pm']*self.mn.p,
                    'm_pm':self.deploy_state['m_pm']*self.mn.m,
-                   'pm':self.deploy_state['pm']*self.mn.pm
+                   'pm':self.deploy_state['pm']*self.mn.pm,
+                   'a_encode':self.deploy_state['a_encode']
                   }
         li_mem_sum=[]
         li_cpu_sum=[]
@@ -828,6 +830,7 @@ class Env_stat():
         li_p_sum=[]
         li_m_sum=[]
         li_pm_sum=[]
+        li_a_encode=[]
 
         # if verbose:
             # cpu_ret=self.pack_plot(self.li_cpu,verbose)
@@ -847,6 +850,7 @@ class Env_stat():
         li_p_sum.append(self.pack_plot(self.li_p))
         li_m_sum.append(self.pack_plot(self.li_m))
         li_pm_sum.append(self.pack_plot(self.li_pm))
+        li_a_encode.append(np.zeros(APP_NUM))
 
         li_cpu_sum.append(env_sum()['c'])
         li_mem_sum.append(env_sum()['m'])
@@ -854,6 +858,7 @@ class Env_stat():
         li_p_sum.append(env_sum()['p_pm'])
         li_m_sum.append(env_sum()['m_pm'])
         li_pm_sum.append(env_sum()['pm'])
+        li_a_encode.append(env_sum()['a_encode'])
 
 
         li_cpu_sum.append(np.zeros(14*5))
@@ -862,12 +867,14 @@ class Env_stat():
         li_p_sum.append(np.zeros(14*5))
         li_m_sum.append(np.zeros(14*5))
         li_pm_sum.append(np.zeros(14*5))
+        li_a_encode.append(np.zeros(14*5))
         self.matrix=np.vstack([np.hstack(li_cpu_sum)
                                ,np.hstack(li_mem_sum)
                                ,np.hstack(li_disk_sum)
                                ,np.hstack(li_p_sum)
                                ,np.hstack(li_m_sum)
-                               ,np.hstack(li_pm_sum)])
+                               ,np.hstack(li_pm_sum)
+                               ,np.hstack(li_a_encode)])
         # plt.figure()
     def init_matrix(self,verbose=0):
 
