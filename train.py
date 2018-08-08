@@ -334,7 +334,6 @@ def train():
         for id_,iid in enumerate(iid_li):
             if epoch==0:
                 if args.only_backward:
-                    epoch=args.epoch
                     print('only_backward in {}'.format(epoch))
                     break
         # for id_,iid in enumerate(df_ins_sum.iid_num.sort_values()):
@@ -462,6 +461,7 @@ def train():
         if epoch%1==0:
             if epoch==0:
                 if args.only_backward:
+                    print('only_backward in {}'.format(epoch))
                     update_id =(1000-1)*len(fn)
                     print(update_id)
             assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
@@ -501,7 +501,7 @@ def train():
             # log_saved.append(m.logprob_history.data.numpy())
             # log_saved.append(torch.cat(m.logprob_history).data.numpy())
 
-            fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
+            fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(args.epoch))
             fn.sort(key=lambda x:x.stat().st_mtime)
             k_acc=0
             for i_,each in enumerate(fn):
