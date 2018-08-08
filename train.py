@@ -460,11 +460,11 @@ def train():
     #     print('---------------------------')
         fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
         if epoch%1==0:
-            if args.only_backward:
-                update_id =(1000-1)*len(fn)
-                print(update_id)
-            else:
-                assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
+            if epoch==0:
+                if args.only_backward:
+                    update_id =(1000-1)*len(fn)
+                    print(update_id)
+            assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
             rewards = []
             # m.rewards=[1]*(update_id+1)
             temp=[-1]*(update_id)
