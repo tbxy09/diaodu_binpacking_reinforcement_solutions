@@ -30,11 +30,13 @@ import ipdb
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--seed',type=int,default=553)
+parser.add_argument('--epoch',type=int,default=553)
 parser.add_argument('--inst-num',type=int,default=0)
 parser.add_argument('--verbose',type=int,default=1)
 parser.add_argument('--fn',type=str,default='')
 parser.add_argument('--base',type=str,default='')
 parser.add_argument('--use-cache',type=int,default=0)
+parser.add_argument('--only-backward',type=int,default=0)
 parser.add_argument('--run-id',type=str,default='')
 parser.add_argument('--ab',type=str,default='')
 parser.add_argument('--log-interval', type=int, default=8, metavar='N',
@@ -50,7 +52,7 @@ print(args.gamma)
 
 print('train')
 inst_num_dic={'a':68219,'b':68224}
-num_life={'b':3000,'a':12000}
+num_life={'b':3000,'a':15000}
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
 roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
 base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
@@ -59,7 +61,8 @@ NUM_LIFE=num_life[args.ab]
 torch.manual_seed(args.seed)
 
 if args.run_id not in os.listdir('/data2/run/'):os.mkdir('/data2/run/'+args.run_id)
-assert os.listdir('/data2/run/'+args.run_id)==[]
+if not args.only_backward:
+    assert os.listdir('/data2/run/'+args.run_id)==[]
 
 pre_processor=Preprocess(base_dic[args.ab])
 df_app_res,df_machine,df_ins,df_app_inter,df_ins_sum=pre_processor.run_pre()
@@ -324,11 +327,16 @@ def train():
         del df_ins_copy
         gc.collect()
 
-        bar=Progbar(target=len(iid_li)+100,width=30,interval=0.05)
+        bar=Progbar(target=len(iid_li)+NUM_LIFE,width=30,interval=0.05)
         update_id=0
         log_iid='ff'
         np.random.shuffle(iid_li)
         for id_,iid in enumerate(iid_li):
+            if epoch==0:
+                if args.only_backward:
+                    epoch=args.epoch
+                    print('only_backward in {}'.format(epoch))
+                    break
         # for id_,iid in enumerate(df_ins_sum.iid_num.sort_values()):
 
             # del m.logprob_history[:]
@@ -450,11 +458,16 @@ def train():
             # del m.rewards[:]
 
     #     print('---------------------------')
+        fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
         if epoch%1==0:
-            assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
+            if args.only_backward:
+                update_id =(1000-1)*len(fn)
+                print(update_id)
+            else:
+                assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
             rewards = []
             # m.rewards=[1]*(update_id+1)
-            temp=[1]*(update_id)
+            temp=[-1]*(update_id)
             # print(len(m.rewards),m.rewards[0],m.rewards[-1])
             # ipdb.set_trace()
             # log_rewards = []
@@ -480,6 +493,7 @@ def train():
 
             rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
             rewards = rewards/10
+            print(rewards.shape)
             # print(rewards[:10])
 
             loss_li=[]
@@ -499,6 +513,8 @@ def train():
                     loss_li.append(-log_prob*rewards[k_acc+k])
                 k_acc=k_acc+(k+1)
 
+            print(len(loss_li))
+
 
             loss = torch.cat(loss_li).sum()
 
@@ -510,6 +526,8 @@ def train():
 
             if loss_li:
                 loss=torch.add(loss,torch.cat(loss_li).sum())
+            else:
+                print('the second loss_li is empty')
 
             print('\n---------------------------')
             print(loss)
