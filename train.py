@@ -50,7 +50,7 @@ print(args.gamma)
 
 print('train')
 inst_num_dic={'a':68219,'b':68224}
-num_life={'b':3000,'a':1000}
+num_life={'b':3000,'a':12000}
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
 roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
 base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
@@ -280,7 +280,7 @@ def train():
         load_checkpoints()
 
     # for epoch in count(1):
-    for epoch in range(10):
+    for epoch in range(100):
 
         m.logprob_history=[]
         m.rewards=[]
