@@ -207,7 +207,7 @@ class Env_stat():
         # fn='policy{}.pth.tar'.format(e)
         # dic['saved_log_probs'].append(log_probs)
         # dic['rewards'].append(rewards)
-        dic['counter']=self.counter
+        self.dic['counter']=self.counter
         self.dic['matrix']=self.matrix
         self.dic['deploy_state']=self.deploy_state
         # dic['policy_rewards']=[]
@@ -490,11 +490,12 @@ class Env_stat():
                     # print('\ninfer end')
 
                     # print(v)
-                    self.counter[1]=self.counter[1]+1
+                    # self.counter[1]=self.counter[1]+1
                 if v>self.deploy_state['a_encode'][self.n]:
                     self.deploy_state['a_encode'][self.n]=v
 
             if end_flag:
+                self.counter[1]=self.counter[1]+1
                 return 0,1
                 # if result[i].get()==1:
 
