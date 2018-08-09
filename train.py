@@ -283,7 +283,9 @@ def train():
         load_checkpoints()
 
     # for epoch in count(1):
-    for epoch in range(100):
+    # epoch=args.epoch
+
+    for epoch in range(args.epoch,args.epoch+100):
 
         m.logprob_history=[]
         m.rewards=[]
@@ -332,7 +334,7 @@ def train():
         log_iid='ff'
         np.random.shuffle(iid_li)
         for id_,iid in enumerate(iid_li):
-            if epoch==0:
+            if epoch==args.epoch:
                 if args.only_backward:
                     print('only_backward in {}'.format(epoch))
                     break
@@ -458,8 +460,9 @@ def train():
 
     #     print('---------------------------')
         fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
+        print(fn)
         if epoch%1==0:
-            if epoch==0:
+            if epoch==args.epoch:
                 if args.only_backward:
                     print('only_backward in {}'.format(epoch))
                     update_id =(1000-1)*len(fn)
@@ -501,7 +504,10 @@ def train():
             # log_saved.append(m.logprob_history.data.numpy())
             # log_saved.append(torch.cat(m.logprob_history).data.numpy())
 
-            fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(args.epoch))
+
+            # if epoch==0&args.only_backward==1
+                    # fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(args.epoch))
+            fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
             fn.sort(key=lambda x:x.stat().st_mtime)
             k_acc=0
             for i_,each in enumerate(fn):

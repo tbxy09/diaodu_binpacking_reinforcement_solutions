@@ -207,6 +207,7 @@ class Env_stat():
         # fn='policy{}.pth.tar'.format(e)
         # dic['saved_log_probs'].append(log_probs)
         # dic['rewards'].append(rewards)
+        dic['counter']=self.counter
         self.dic['matrix']=self.matrix
         self.dic['deploy_state']=self.deploy_state
         # dic['policy_rewards']=[]
