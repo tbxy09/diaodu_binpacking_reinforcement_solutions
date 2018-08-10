@@ -13,7 +13,7 @@ sys.path.append('./')
 from dst import *
 from model import *
 sys.path.append('./util')
-from gen_expand import re_find_y,evaluate_whole,re_find_whole
+from gen_expand import re_find_y,evaluate_whole,re_find_whole,ck_parser
 from threed_view import *
 from meter import AverageMeter
 import random
@@ -312,12 +312,18 @@ def train():
                 m.load_state_dict(checkpoint['state_dict'])
                 del checkpoint
                 gc.collect()
+        iid_li=[]
+        if not args.only_backward:
+            print('load MID')
+            checkpoint=torch.load('/data2/run/{}/policy{}_only_dic.pth.tar'.format(args.run_id,epoch-1))
+            iid_li=checkpoint['iid']
+            del checkpoint
         if epoch!=args.epoch:
             print('load MID')
             checkpoint=torch.load('/data2/run/{}/policy{}_only_dic.pth.tar'.format(args.run_id,epoch-1))
             iid_li=checkpoint['iid']
             del checkpoint
-            gc.collect()
+        gc.collect()
         # this is the place to load the policy checkpoint
 
 
@@ -326,8 +332,9 @@ def train():
 
         # df_ins_sum.iid_num.sort_values()
         # for id_,(iid,mid) in enumerate(dic['im'].items()):
-        if epoch==args.epoch:
-            iid_li=top_level_batch()
+        # if epoch==args.epoch:
+        # iid_li=top_level_batch()
+        iid_li.append(set(top_level_batch())-set(iid_li))
 
         origin_len=len(iid_li)
 
@@ -485,11 +492,11 @@ def train():
             if len(rewards)>playing_len:
                 playing_len=len(rewards)
 
-            if playing_len>len(iid_li)-1:
-                print('\n---------------------------')
-                print('\nGame Win')
-                print('\n---------------------------')
-                break
+            # if playing_len>len(iid_li)-1:
+            #     print('\n---------------------------')
+            #     print('\nGame Win')
+            #     print('\n---------------------------')
+            #     break
 
             rewards = torch.Tensor(rewards)
 
@@ -566,8 +573,14 @@ def train():
                 optimizer.step()
                 save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
                 if dic['iid'][0]!='':
-                    print('dic is empty')
+                    print('dic is not empty')
                     submit(args.run_id,args.epoch)
+                else:
+                    fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
+                    # fn.sort(key=lambda x:x.stat().st_mtime)
+                    print(fn[-1])
+                    print('dic is empty')
+                    submit(args.run_id,args.epoch,fn=fn[-1])
 
                 del m.logprob_history[:]
                 del m.rewards[:]
@@ -669,7 +682,8 @@ def top_level_batch():
     del df_ins_copy
     gc.collect()
 
-    return ba+gp.get_group(True).iid.tolist()
+    # return ba+gp.get_group(True).iid.tolist()
+    return ba
 
 def reput(df):
     up_limit=list(set(df.iid.value_counts()))
@@ -685,14 +699,24 @@ def reput(df):
             stack.append(ret)
     return pd.concat(stack).reset_index()
 
-def submit(ck,run_id,epoch):
-    su_path={'a':'./a_/su_{}.csv'.format(run_id),
-         'b':'./b_/su_{}.csv'.format(run_id),
-         'ab':'./ab_/su_{}.csv'.format(run_id)
+def submit(run_id,epoch,fn=None):
+    print(fn)
+    su_path={'a':'a_su_{}.csv'.format(run_id),
+         'b':'b_su_{}.csv'.format(run_id),
+         'ab':'ab_su_{}.csv'.format(run_id)
         }
+    iid=[]
+    mid=[]
 
-    # log_prob,mid,iid=ck_parser(fn[-1],m,env_stat)
-    su=pd.DataFrame(np.vstack([dic['iid'],dic['mid']]).T,columns=['iid','mid'])
+    if fn:
+        ck=torch.load(str(fn))
+        iid=ck['iid']
+        mid=ck['mid']
+    else:
+        iid=dic['iid']
+        mid=dic['mid']
+
+    su=pd.DataFrame(np.vstack([iid,mid]).T,columns=['iid','mid'])
 
     su.mid.replace('',float('NaN'),inplace=True)
     su.iid.replace('',float('NaN'),inplace=True)
@@ -701,7 +725,7 @@ def submit(ck,run_id,epoch):
 
     reput_df=reput(su)
 
-    assert reput_df.shape[0]==df_ins[df_ins.mid.notnull()].shape[0]
+    # assert reput_df.shape[0]==df_ins[df_ins.mid.notnull()].shape[0]
 
     # to_csv
     reput_df.rename(columns={0:'mid'},inplace=True)
