@@ -13,7 +13,7 @@ sys.path.append('./')
 from dst import *
 from model import *
 sys.path.append('./util')
-from gen_expand import re_find_y,evaluate_whole
+from gen_expand import re_find_y,evaluate_whole,re_find_whole
 from threed_view import *
 from meter import AverageMeter
 import random
@@ -403,13 +403,13 @@ def train():
             # e='_'.join([str(epoch),str(iid)])
             if verbose:
                 if (len(m.rewards)+1)%args.dump_interval==0:
+                # if (len(m.rewards)+1)%100==0:
                     e='_'.join([str(epoch),iid])
                     # save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
                     # if log_loss:
                     if m.logprob_history:
                         # save_checkpoints(log_reward,log_loss,e,iid,id_,args.run_id)
                         save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
-                    # print(log_reward,log_loss)
                     # print(m.rewards[0],m.logprob_history[0])
                     # print(m.rewards[-1],m.logprob_history[-1])
                     del m.rewards[:]
@@ -554,7 +554,7 @@ def train():
             #     if epoch%1==0:
             #,         save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
 
-            env.evaluate_at_the_end(proc,NUM_PROC)
+            env.evaluate_at_the_end(re_find_whole,proc,NUM_PROC)
 
             print('\n---------------------------')
             print(playing_len,len(rewards),update_id,env.counter[0],env.counter[1])
@@ -565,8 +565,8 @@ def train():
                 loss.backward()
                 optimizer.step()
                 save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
-                dic=torch.load('/data2/run/n/policy_cont/policy1_inst_62788.pth.tar')
-                submit(dic['iid'],dic['mid'],args.run_id,args.epoch)
+                ck=torch.load('/data2/run/n/policy_cont/policy1_inst_62788.pth.tar')
+                submit(ck,args.run_id,args.epoch)
 
                 del m.logprob_history[:]
                 del m.rewards[:]
@@ -684,7 +684,7 @@ def reput(df):
             stack.append(ret)
     return pd.concat(stack).reset_index()
 
-def submit(iid,mid,run_id,epoch):
+def submit(ck,run_id,epoch):
     fn.append('/data2/{}/policy{}.pth.tar'.format(run_id,epoch))
     su_path={'a':'./a_/su_{}.csv'.format(run_id),
          'b':'./b_/su_{}.csv'.format(run_id),
@@ -692,7 +692,7 @@ def submit(iid,mid,run_id,epoch):
         }
 
     # log_prob,mid,iid=ck_parser(fn[-1],m,env_stat)
-    su=pd.DataFrame(np.vstack([iid,mid]).T,columns=['iid','mid'])
+    su=pd.DataFrame(np.vstack([ck['iid'],ck['mid']]).T,columns=['iid','mid'])
 
     su.mid.replace('',float('NaN'),inplace=True)
     su.iid.replace('',float('NaN'),inplace=True)

@@ -79,30 +79,31 @@ def submit(ab,fig=0,i=-1):
     print(su[su.mid.notnull()].shape,ab_s[ab],abc_s[ab])
     return su
 
-def evaluate_whole(deploy_state,splits,proc,num_proc,counter):
-    def myfun(deploy_state,app_inter):
-        text=(deploy_state['a']+' ').sum()
-        for k in  ['c','m','d','p_pm','m_pm','pm']:
-            if any(deploy_state[k]>1):
-        #     if self.deploy_state[k][self.n]>1:
-                # print('\n')
-                # print(k ,'end')
-                counter[0]=counter[0]+1
-                print(counter)
-
-        for g,v in app_inter.groupby('aid') :
-            if re.findall(g,text):
-                for each in v.ab:
-                    if re.findall(each,text):
-                        counter[1]=counter[1]+1
-                        print(each)
-        #                 return 1
+def evaluate_whole(f,deploy_state,splits,app_inter,proc,num_proc,counter):
+    # def myfun(deploy_state,app_inter):
+    #     import re
+    #     text=(deploy_state['a']+' ').sum()
+    #     for g,v in app_inter.groupby('aid') :
+    #         if re.findall(g,text):
+    #             for each in v.ab:
+    #                 if re.findall(each,text):
+    #                     counter[1]=counter[1]+1
+    #                     print(each)
+    for k in  ['c','m','d','p_pm','m_pm','pm']:
+        counter[0]=counter[0]+sum(deploy_state[k]>1)
 
     result=[]
 
+    text=(deploy_state['a']+' ').sum()
     for i in range(num_proc):
         # result.append(proc.apply_async(f,(text,splits[i])))
-        result.append(proc.apply_async(myfun,(deploy_state,splits[i])))
+        result.append(proc.apply_async(f,(text,splits[i])))
+
+    for i in range(num_proc):
+        # end,v=result[i].get()
+        if result[i].get()==1:
+            counter[1] =counter[1]+1
+    # myfun(deploy_state,app_inter)
 
 def re_find_y(text,app_inter):
     import re
@@ -143,6 +144,19 @@ def re_find_y(text,m,n,deploy_state,app_inter):
 # def re_find_y(m,app_inter):
 #     return app_inter[['v','ab_encode']].apply(
 #         lambda x: sum([m.count(each) for each in set(x.ab_encode)]),axis=1).max()
+
+def re_find_whole(text,app_inter):
+    import re
+    # p=re.compile('(\s+)')
+    # text=p.sub(' ',text)
+
+    for g,v in app_inter.groupby('aid') :
+        if re.findall(g,text):
+            for each in v.ab:
+                if re.findall(each,text):
+                    # print(each)
+                    return 1
+    return 0
 
 def li_gen(i,deploy_state):
     li_=deploy_state['a'][i].split('app_')[1:]
