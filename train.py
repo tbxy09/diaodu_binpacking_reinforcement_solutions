@@ -307,16 +307,17 @@ def train():
         gc.collect()
         if epoch==args.epoch:
             if args.fn:
-            print('load policy')
+                print('load policy')
                 checkpoint=torch.load(args.fn)
                 m.load_state_dict(checkpoint['state_dict'])
                 del checkpoint
                 gc.collect()
-        print('load MID')
-        checkpoint=torch.load('/data2/{}/policy{}_only_dic.pth.tar'.format(run_id,epoch-1))
-        iid_li=checkpoint['iid']
-        del checkpoint
-        gc.collect()
+        if epoch!=args.epoch:
+            print('load MID')
+            checkpoint=torch.load('/data2/run/{}/policy{}_only_dic.pth.tar'.format(args.run_id,epoch-1))
+            iid_li=checkpoint['iid']
+            del checkpoint
+            gc.collect()
         # this is the place to load the policy checkpoint
 
 
@@ -564,7 +565,8 @@ def train():
                 loss.backward()
                 optimizer.step()
                 save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
-                submit(dic['iid'],dic['mid'])
+                dic=torch.load('/data2/run/n/policy_cont/policy1_inst_62788.pth.tar')
+                submit(dic['iid'],dic['mid'],args.run_id,args.epoch)
 
                 del m.logprob_history[:]
                 del m.rewards[:]
@@ -669,7 +671,9 @@ def top_level_batch():
     return ba+gp.get_group(True).iid.tolist()
 
 def reput(df):
-    up_limit=set(df.iid.value_counts())
+    up_limit=list(set(df.iid.value_counts()))
+    up_limit.sort(reverse=False)
+    print(up_limit)
     stack=[]
     for each in up_limit:
         f1=df.groupby('iid').filter(lambda x: len(x) == each)
@@ -680,7 +684,7 @@ def reput(df):
             stack.append(ret)
     return pd.concat(stack).reset_index()
 
-def submit(iid,mid):
+def submit(iid,mid,run_id,epoch):
     fn.append('/data2/{}/policy{}.pth.tar'.format(run_id,epoch))
     su_path={'a':'./a_/su_{}.csv'.format(run_id),
          'b':'./b_/su_{}.csv'.format(run_id),
@@ -693,22 +697,22 @@ def submit(iid,mid):
     su.mid.replace('',float('NaN'),inplace=True)
     su.iid.replace('',float('NaN'),inplace=True)
 #     assert su.shape==(ab_s[ab],2)
-    print(su[su.mid.notnull()].shape,df_ins[df_ins.mid..notnull()].shape,df_ins.shape)
+    print(su[su.mid.notnull()].shape,df_ins[df_ins.mid.notnull()].shape,df_ins.shape)
 
-    reput_df=reput(df)
+    reput_df=reput(su)
 
-    assert reput_df.shape[0]==df_ins_a[df_ins_a.mid.notnull()].shape[]
+    assert reput_df.shape[0]==df_ins[df_ins.mid.notnull()].shape[0]
 
     # to_csv
+    reput_df.rename(columns={0:'mid'},inplace=True)
     reput_df.to_csv(su_path[args.ab], sep=",", index=False, header=None,line_terminator='\n')
 
     # to_torch_dic
     dic['iid']=reput_df.iid.values.tolist()
     dic['mid']=reput_df.mid.values.tolist()
-    torch.save(dic,'./data2/{}/policy{}_only_dic.pth.tar'.format(run_id,epoch))
+    torch.save(dic,'/data2/run/{}/policy{}_only_dic.pth.tar'.format(run_id,epoch))
 
 
-df_ins_a.shape,df_ins_b.shape,df_ins_a[df_ins_a.mid.notnull()].shape,df_ins_b[df_ins_b.mid.notnull()].shape
 import torch.multiprocessing as mp
 from gen_expand import re_find_y
 if use_cuda:

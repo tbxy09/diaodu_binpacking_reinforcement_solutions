@@ -292,7 +292,7 @@ class Env_stat():
         pat=r'('+pat+')'
         self.p=re.compile(pat)
 
-    def evaluate_at_the_end(proc,num_proc):
+    def evaluate_at_the_end(self,proc,num_proc):
         evaluate_whole(self.deploy_state,self.splits,proc,num_proc,self.evl_counter)
 
     def evaluate(self,cur,choice,proc,f,mid_real):

@@ -79,7 +79,6 @@ def submit(ab,fig=0,i=-1):
     print(su[su.mid.notnull()].shape,ab_s[ab],abc_s[ab])
     return su
 
-df_ins_a.shape,df_ins_b.shape,df_ins_a[df_ins_a.mid.notnull()].shape,df_ins_b[df_ins_b.mid.notnull()].shape
 def evaluate_whole(deploy_state,splits,proc,num_proc,counter):
     def myfun(deploy_state,app_inter):
         text=(deploy_state['a']+' ').sum()
