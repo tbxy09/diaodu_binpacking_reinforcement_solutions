@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from util.threed_view import *
-from util.gen_expand import proc_split
+from util.gen_expand import proc_split,evaluate_whole
 import gc
 import time
 
@@ -11,7 +11,10 @@ APP_NUM=9338
 # INST_NUM=68219
 # INST_NUM=68224
 
-NUM_PROC=8
+NUM_PROC=12
+print('=============')
+print(NUM_PROC)
+print('=============')
 
 class Env_stat():
     def __init__(self,df_machine,df_app_res,df_app_inter,df_ins_sum,verbose):
@@ -150,6 +153,11 @@ class Env_stat():
 
         self.regex_gen()
 
+        qsplit=self.app_inter
+        unit=(len(qsplit)-len(qsplit)%NUM_PROC)/NUM_PROC
+        self.splits=proc_split(qsplit,unit,NUM_PROC)
+        self.evl_counter=[0,0]
+
     def m(self, p_value):
         if self._not_quick_roll!=p_value:
             print(p_value)
@@ -269,123 +277,6 @@ class Env_stat():
         self.dic['li_mem']=self.li_mem
         self.dic['li_disk']=self.li_disk
 
-    def evaluate_copy(self,cur,choice):
-
-        def re_find(text,a):
-            import re
-            p=re.compile('(\s+)')
-            text=p.sub(' ',text)
-            if a==0:
-                for g,v in self.app_inter.groupby('aid') :
-                    if re.findall(g,text):
-                    # if re_findall(g,text):
-                        for each in v.ab:
-                            if re.findall(each,text):
-                            # if re_findall(each,text):
-                                print(each)
-                                return 1
-            if a==1:
-                v_li=[]
-                for g,v in self.app_inter.groupby('aid') :
-                    if re.findall(g,text):
-                        for each in v.ab:
-                            v_li.append(each)
-                pat=')|('.join(v_li)
-                pat=r'('+pat+')'
-                p=re.compile(pat)
-                if p.findall(text):
-                    return 1
-                    # if re_findall(g,text):
-            return 0
-
-        self.ret_init()
-        self.li_init()
-
-        # a=np.ones(250)
-        # b=np.zeros(250)
-        # b[-1]=1
-
-        # self.i=self.i+1
-        # return a[self.i-1],b[self.i-1]
-
-        if choice>self.mn.shape[0]-1:
-            # return self.env_cpu.sum(0).sum(0),1
-            return 1,1
-
-        self.n=(self.n+choice)%MA_NUM
-        # print('\n')
-        # print(self.n,choice)
-        choice=self.mn.mid[self.n]
-
-        # self.env_cpu,self.env_mem,self.env_app,env_cpu_abs,env_mem_abs,self.env_disk=self.update(cur,choice)
-
-        self.deploy_state=self.update(cur,choice,self.n)
-
-        # if any(self.update(cur,choice).max(0)>threshold):
-        # print('{0},{1}'.format(self.env_cpu.max(1).argmax(),self.env_cpu.max(1).max()))
-        # print('{0}'.format(env_cpu_abs.sum(1).max()))
-        # print('{0},{1}'.format(self.env_mem.max(1).argmax(),self.env_mem.max(1).max()))
-        # print('{0}'.format(self.env_mem.sum(1).max()))
-
-        self.env_matrix(cur)
-
-        # self.dic['matrix']=self.matrix
-        # self.dic['deploy_state']=self.deploy_state
-
-        for k in  ['c','m','d','p_pm','m_pm','pm']:
-            if any(self.deploy_state[k]>1):
-                pass
-                # print('\n')
-                # print(k ,'end')
-                # return self.env_cpu.sum(0).sum(0),1
-                # return 1,1
-
-        # for k in  ['c','m']:
-        #     if any(self.deploy_state[k].max(1)>1):
-        #         print(k ,'end')
-        #         # return self.env_cpu.sum(0).sum(0),1
-        #         return 1,1
-
-        # text=(self.env_app+' ').sum()
-
-        text=(self.deploy_state['a']+' ').sum()
-
-
-        # ab=self.app_inter.ab.sort_values()
-        # r=self.app_inter[['ab']].apply(lambda x: re.findall(x.ab,text),axis=1)
-        # r=[re.findall(each,text) for each in self.ab.ab]
-                                       # ,axis=1)
-        # [re.findall('(app_3432).*?(app_7652).*?(app_8618).*?(app_1300).*?(app_4663).*?(app_8324)',text) for each in ab]
-        # r=pd.Series(r).apply(lambda x: len(x)!=0)
-        # r=[[ for each in v.ab if re.findall(each,text) ] for g,v in self.app_inter.groupby('aid') if re.findall(g,text)]
-
-        a=np.ones(69000)
-        b=np.zeros(69000)
-        b[-1]=1
-
-        self.i=self.i+1
-        return a[self.i-1],b[self.i-1]
-
-        if self.not_quick_roll==1:
-            end=re_find(text,1)
-            # assert re_find(text,0)==re_find(text,1)
-            if end==1:
-                print('\ninfer end')
-            # return 1,end
-
-        a=np.ones(250)
-        b=np.zeros(250)
-        b[-1]=1
-
-        self.i=self.i+1
-        return a[self.i-1],b[self.i-1]
-
-        # if any(r)==True:
-            # print('end')
-
-        # return self.env_cpu.sum(0).sum(0),end
-
-        return 1,0
 
     def regex_gen(self):
         import re
@@ -400,6 +291,9 @@ class Env_stat():
         pat=pat_v
         pat=r'('+pat+')'
         self.p=re.compile(pat)
+
+    def evaluate_at_the_end(proc,num_proc):
+        evaluate_whole(self.deploy_state,self.splits,proc,num_proc,self.evl_counter)
 
     def evaluate(self,cur,choice,proc,f,mid_real):
 
@@ -419,14 +313,11 @@ class Env_stat():
         int_mid_real=0
         if mid_real=='ff':
             int_mid_real=-1
-        if choice==-1|int_mid_real==-1:
+        if int_mid_real==-1:
             if int_mid_real==-1:
                 self.n=(self.n+choice)%MA_NUM
                 choice=self.mn.mid[self.n]
                 self.deploy_state=self.update(cur,choice,self.n)
-            if choice==-1:
-                self.n=self.mn.mid.tolist().index(mid_real)
-                self.deploy_state=self.update(cur,mid_real,self.n)
         else:
             self.n=(self.n+choice)%MA_NUM
             choice=self.mn.mid[self.n]
@@ -469,15 +360,12 @@ class Env_stat():
         ignore=0
 
         if not ignore:
-            qsplit=self.app_inter
-            unit=(len(qsplit)-len(qsplit)%NUM_PROC)/NUM_PROC
-            splits=proc_split(qsplit,unit,NUM_PROC)
 
             result=[]
 
             for i in range(NUM_PROC):
                 # result.append(proc.apply_async(f,(text,splits[i])))
-                result.append(proc.apply_async(f,(text,m,self.n,self.deploy_state,splits[i])))
+                result.append(proc.apply_async(f,(text,m,self.n,self.deploy_state,self.splits[i])))
 
             end_flag=0
 
@@ -518,167 +406,6 @@ class Env_stat():
         # return self.env_cpu.sum(0).sum(0),end
 
         return 1,0
-
-    def update_history(self,cur,choice):
-
-        def get_cpu_usage_history(cur,res_cpu):
-        #     res_v=res[index]
-            ps=self.app[self.col_req].iloc[cur,self.col_cpu_req].astype(float)
-            if self.verbose==1:
-                ps.apply(lambda x: x/res_cpu).plot()
-            return ps.apply(lambda x: x/res_cpu)
-            # return ps.apply(f)
-
-        def get_mem_usage_history(cur,res_mem):
-        #     res_v=res[index]
-            ps=self.app[self.col_req].iloc[cur,self.col_mem_req].astype(float)
-            if self.verbose==1:
-                ps.apply(lambda x: x/res_mem).plot()
-            return ps.apply(lambda x: x/res_mem)
-
-        def get_fe_nt_usage(cur,key,res_total):
-            return self.unit[key][cur].astype(float)/res_total
-
-        # def get_pm_usage(cur,res_pm):
-        # #     res_v=res[index]
-        #     ps=self.app['p'].iloc[cur].astype(float)
-        #     if self.verbose==1:
-        #         ps.apply(lambda x: x/res_pm).plot()
-        #     return ps.apply(lambda x: x/res_pm)
-        # s=df_machine.iloc[cur-3:cur+3][['index','cpu']]
-#         choice=op_policy(cur)
-        # s=df_machine.iloc[choice-3:choice+3][['index','cpu']]
-
-        z98=pd.Series(np.zeros(98))
-        # v=get_cpu_usage(cur,res_cpu)
-        # v=get_mem_usage(cur,res_mem)
-        # map_cpu={0:z,1:v}
-        # map_mem={0:z,1:v}
-
-        s=self.mn.iloc[:][['mid','cpu','mem','disk','p','m','pm']]
-
-        self.ret_v_cpu.append(s.apply(lambda x:get_cpu_usage(cur,x['cpu']) if choice==x['mid'] else z98,axis=1).values)
-        self.ret_v_cpu_abs.append(s.apply(lambda x:get_cpu_usage(cur,x['cpu'])*x['cpu'] if choice==x['mid'] else z98,axis=1).values)
-        self.ret_v_mem.append(s.apply(lambda x:get_mem_usage(cur,x['mem']) if choice==x['mid'] else z98,axis=1).values)
-        self.ret_v_mem_abs.append(s.apply(lambda x:get_mem_usage(cur,x['mem'])*x['mem'] if choice==x['mid'] else z98,axis=1).values)
-
-        self.ret_v_disk.append(s.apply(lambda x:get_fe_nt_usage(cur,'disk',x['disk']) if choice==x['mid'] else 0,axis=1).values)
-
-        self.ret_v_p.append(s.apply(lambda x:get_fe_nt_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_m.append(s.apply(lambda x:get_fe_nt_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_pm.append(s.apply(lambda x:get_fe_nt_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
-
-        self.ret_app_infer.append(s['mid'].apply(lambda x:self.app.aid[cur] if choice==x else '').values)
-
-
-        if self.verbose==1:
-            threed_view(np.sum(self.ret_v_cpu,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_mem,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_disk,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_p,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_m,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_pm,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-        # df_machine['cpu_deploy'].sum(axis=1).plot()
-
-        return {'c':np.sum(self.ret_v_cpu,0)
-                ,'m':np.sum(self.ret_v_mem,0)
-                ,'a':np.sum(self.ret_app_infer,0)
-                ,'ca':np.sum(self.ret_v_cpu_abs,0)
-                ,'ma':np.sum(self.ret_v_mem_abs,0)
-                ,'d':np.sum(self.ret_v_disk,0)
-                ,'p_pm':np.sum(self.ret_v_p,0)
-                ,'m_pm':np.sum(self.ret_v_m,0)
-                ,'pm':np.sum(self.ret_v_pm,0)
-                }
-
-    def update_history2(self,cur,choice):
-        def get_usage(cur,key,res_total):
-            return self.unit[key][cur].astype(float)/res_total
-
-        s=self.mn.iloc[:][['mid','cpu','mem','disk','p','m','pm']]
-
-        self.ret_v_cpu.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_cpu_mean.append(s.apply(lambda x:get_usage(cur,'cm',1) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_mem.append(s.apply(lambda x:get_usage(cur,'m',x['mem']) if choice==x['mid'] else 0,axis=1).values)
-
-        self.ret_v_disk.append(s.apply(lambda x:get_usage(cur,'d',x['disk']) if choice==x['mid'] else 0,axis=1).values)
-
-        self.ret_v_p.append(s.apply(lambda x:get_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_m.append(s.apply(lambda x:get_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_pm.append(s.apply(lambda x:get_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
-
-        self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
-
-
-        if self.verbose==1:
-            threed_view(np.sum(self.ret_v_cpu,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_mem,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_disk,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_p,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_m,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_pm,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-        # df_machine['cpu_deploy'].sum(axis=1).plot()
-
-        return {'c':np.sum(self.ret_v_cpu,0)
-                ,'m':np.sum(self.ret_v_mem,0)
-                ,'a':np.sum(self.ret_app_infer,0)
-                ,'cm':np.sum(self.ret_v_cpu_mean,0)
-                ,'d':np.sum(self.ret_v_disk,0)
-                ,'p_pm':np.sum(self.ret_v_p,0)
-                ,'m_pm':np.sum(self.ret_v_m,0)
-                ,'pm':np.sum(self.ret_v_pm,0)
-                }
-
-    def update_history(self,cur,choice):
-        def get_usage(cur,key,res_total):
-            return self.unit[key][cur].astype(float)/res_total
-
-        s=self.mn.iloc[:][['mid','cpu','mem','disk','p','m','pm']]
-
-        self.ret_v_cpu.append(s.apply(lambda x:get_usage(cur,'c',x['cpu']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_cpu.append(self.deploy_state['c'])
-
-        self.ret_v_cpu_mean.append(s.apply(lambda x:get_usage(cur,'cm',1) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_cpu_mean.append(self.deploy_state['cm'])
-
-        self.ret_v_mem.append(s.apply(lambda x:get_usage(cur,'m',x['mem']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_mem.append(self.deploy_state['m'])
-
-        self.ret_v_disk.append(s.apply(lambda x:get_usage(cur,'d',x['disk']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_disk.append(self.deploy_state['d'])
-
-        self.ret_v_p.append(s.apply(lambda x:get_usage(cur,'p_pm',x['p']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_p.append(self.deploy_state['p_pm'])
-
-        self.ret_v_m.append(s.apply(lambda x:get_usage(cur,'m_pm',x['m']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_m.append(self.deploy_state['m_pm'])
-
-        self.ret_v_pm.append(s.apply(lambda x:get_usage(cur,'pm',x['pm']) if choice==x['mid'] else 0,axis=1).values)
-        self.ret_v_pm.append(self.deploy_state['pm'])
-
-        self.ret_app_infer.append(s['mid'].apply(lambda x:self.df_a_i.aid[cur] if choice==x else '').values)
-        self.ret_app_infer.append(self.deploy_state['a'])
-
-
-        if self.verbose==1:
-            threed_view(np.sum(self.ret_v_cpu,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_mem,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_disk,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_p,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_m,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-            threed_view(np.sum(self.ret_v_pm,0)[int(choice.split('_')[-1])-10:int(choice.split('_')[-1])+10,:].T,end=100)
-        # df_machine['cpu_deploy'].sum(axis=1).plot()
-
-        return {'c':np.sum(self.ret_v_cpu,0)
-                ,'m':np.sum(self.ret_v_mem,0)
-                ,'a':np.sum(self.ret_app_infer,0)
-                ,'cm':np.sum(self.ret_v_cpu_mean,0)
-                ,'d':np.sum(self.ret_v_disk,0)
-                ,'p_pm':np.sum(self.ret_v_p,0)
-                ,'m_pm':np.sum(self.ret_v_m,0)
-                ,'pm':np.sum(self.ret_v_pm,0)
-                }
-
 
 
     def update(self,cur,choice,choice_idx,choice_minus=None,choice_idx_minus=None):

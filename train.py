@@ -13,7 +13,7 @@ sys.path.append('./')
 from dst import *
 from model import *
 sys.path.append('./util')
-from gen_expand import re_find_y
+from gen_expand import re_find_y,evaluate_whole
 from threed_view import *
 from meter import AverageMeter
 import random
@@ -52,7 +52,7 @@ print(args.gamma)
 
 print('train')
 inst_num_dic={'a':68219,'b':68224}
-num_life={'b':30000,'a':15000}
+num_life={'b':40000,'a':15000}
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
 roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
 base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
@@ -61,7 +61,8 @@ NUM_LIFE=num_life[args.ab]
 torch.manual_seed(args.seed)
 
 if args.run_id not in os.listdir('/data2/run/'):os.mkdir('/data2/run/'+args.run_id)
-if not args.only_backward:
+# if not args.only_backward:
+if not args.epoch:
     assert os.listdir('/data2/run/'+args.run_id)==[]
 
 pre_processor=Preprocess(base_dic[args.ab])
@@ -292,7 +293,7 @@ def train():
         env.reset()
 
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
-        print('load deployed env state after env reset')
+        print('load game')
         checkpoint=torch.load(roll_file_dic[args.ab])
         env.load_checkpoints(checkpoint['env_dic'])
         li_a_encode=[]
@@ -304,13 +305,18 @@ def train():
         print(env.deploy_state['a_encode'].max())
         del checkpoint
         gc.collect()
-        if epoch==0:
-            print('loading the save model file')
+        if epoch==args.epoch:
             if args.fn:
+            print('load policy')
                 checkpoint=torch.load(args.fn)
                 m.load_state_dict(checkpoint['state_dict'])
                 del checkpoint
                 gc.collect()
+        print('load MID')
+        checkpoint=torch.load('/data2/{}/policy{}_only_dic.pth.tar'.format(run_id,epoch-1))
+        iid_li=checkpoint['iid']
+        del checkpoint
+        gc.collect()
         # this is the place to load the policy checkpoint
 
 
@@ -319,20 +325,17 @@ def train():
 
         # df_ins_sum.iid_num.sort_values()
         # for id_,(iid,mid) in enumerate(dic['im'].items()):
+        if epoch==args.epoch:
+            iid_li=top_level_batch()
 
-        iid_li=df_ins[df_ins.mid.notnull()].iid.tolist()
         origin_len=len(iid_li)
-        df_ins_copy=df_ins.copy()
-        df_ins_copy.mid.fillna('',inplace=True)
-        add_=df_ins_copy.sort_values(ascending=False,by='mid').iid.tolist()
 
-        del df_ins_copy
-        gc.collect()
 
         bar=Progbar(target=len(iid_li)+NUM_LIFE,width=30,interval=0.05)
         update_id=0
         log_iid='ff'
-        np.random.shuffle(iid_li)
+        # np.random.shuffle(iid_li)
+
         for id_,iid in enumerate(iid_li):
             if epoch==args.epoch:
                 if args.only_backward:
@@ -455,10 +458,7 @@ def train():
             if (len(iid_li)-origin_len) >NUM_LIFE:
                 print('\nlen break')
                 break
-            # del m.logprob_history[:]
-            # del m.rewards[:]
 
-    #     print('---------------------------')
         fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
         print(fn)
         if epoch%1==0:
@@ -551,20 +551,27 @@ def train():
             # if epoch%args.log_interval==0:
             # if verbose:
             #     if epoch%1==0:
-            #         save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+            #,         save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+
+            env.evaluate_at_the_end(proc,NUM_PROC)
+
             print('\n---------------------------')
             print(playing_len,len(rewards),update_id,env.counter[0],env.counter[1])
+            print(env.evl_counter[0],env.evl_counter[1])
             print('---------------------------')
             if epoch%1==0:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+                submit(dic['iid'],dic['mid'])
+
                 del m.logprob_history[:]
                 del m.rewards[:]
                 del log_loss[:]
                 del log_reward[:]
                 dic_init()
+
 def deploy_roll():
     dic_init()
     m.logprob_history=[]
@@ -645,11 +652,69 @@ def quick_roll():
             if end:
                 break
 # load(args.fn)
+def top_level_batch():
+    df_ins_copy=df_ins.copy()
+
+    df_ins_copy['mid_null']=df_ins_copy.mid.isnull()
+    df_ins_copy.groupby('mid_null').get_group(True)
+
+    gp=df_ins_copy.groupby('mid_null')
+
+    ba=gp.get_group(False).iid.tolist()
+    np.random.shuffle(ba)
+
+    del df_ins_copy
+    gc.collect()
+
+    return ba+gp.get_group(True).iid.tolist()
+
+def reput(df):
+    up_limit=set(df.iid.value_counts())
+    stack=[]
+    for each in up_limit:
+        f1=df.groupby('iid').filter(lambda x: len(x) == each)
+        ret=f1.groupby('iid').apply(lambda x: x.mid.values[-1])
+    #     print(ret.shape)
+        if ret.shape[0]:
+            print(ret.shape)
+            stack.append(ret)
+    return pd.concat(stack).reset_index()
+
+def submit(iid,mid):
+    fn.append('/data2/{}/policy{}.pth.tar'.format(run_id,epoch))
+    su_path={'a':'./a_/su_{}.csv'.format(run_id),
+         'b':'./b_/su_{}.csv'.format(run_id),
+         'ab':'./ab_/su_{}.csv'.format(run_id)
+        }
+
+    # log_prob,mid,iid=ck_parser(fn[-1],m,env_stat)
+    su=pd.DataFrame(np.vstack([iid,mid]).T,columns=['iid','mid'])
+
+    su.mid.replace('',float('NaN'),inplace=True)
+    su.iid.replace('',float('NaN'),inplace=True)
+#     assert su.shape==(ab_s[ab],2)
+    print(su[su.mid.notnull()].shape,df_ins[df_ins.mid..notnull()].shape,df_ins.shape)
+
+    reput_df=reput(df)
+
+    assert reput_df.shape[0]==df_ins_a[df_ins_a.mid.notnull()].shape[]
+
+    # to_csv
+    reput_df.to_csv(su_path[args.ab], sep=",", index=False, header=None,line_terminator='\n')
+
+    # to_torch_dic
+    dic['iid']=reput_df.iid.values.tolist()
+    dic['mid']=reput_df.mid.values.tolist()
+    torch.save(dic,'./data2/{}/policy{}_only_dic.pth.tar'.format(run_id,epoch))
+
+
+df_ins_a.shape,df_ins_b.shape,df_ins_a[df_ins_a.mid.notnull()].shape,df_ins_b[df_ins_b.mid.notnull()].shape
 import torch.multiprocessing as mp
 from gen_expand import re_find_y
 if use_cuda:
     m=m.cuda()
 if args.non_roll:
+    fn=[]
     train()
 #     if __name__ == '__main__':
 #       num_processes = 4
