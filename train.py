@@ -565,8 +565,9 @@ def train():
                 loss.backward()
                 optimizer.step()
                 save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
-                ck=torch.load('/data2/run/n/policy_cont/policy1_inst_62788.pth.tar')
-                submit(ck,args.run_id,args.epoch)
+                if dic['iid'][0]!='':
+                    print('dic is empty')
+                    submit(args.run_id,args.epoch)
 
                 del m.logprob_history[:]
                 del m.rewards[:]
@@ -685,14 +686,13 @@ def reput(df):
     return pd.concat(stack).reset_index()
 
 def submit(ck,run_id,epoch):
-    fn.append('/data2/{}/policy{}.pth.tar'.format(run_id,epoch))
     su_path={'a':'./a_/su_{}.csv'.format(run_id),
          'b':'./b_/su_{}.csv'.format(run_id),
          'ab':'./ab_/su_{}.csv'.format(run_id)
         }
 
     # log_prob,mid,iid=ck_parser(fn[-1],m,env_stat)
-    su=pd.DataFrame(np.vstack([ck['iid'],ck['mid']]).T,columns=['iid','mid'])
+    su=pd.DataFrame(np.vstack([dic['iid'],dic['mid']]).T,columns=['iid','mid'])
 
     su.mid.replace('',float('NaN'),inplace=True)
     su.iid.replace('',float('NaN'),inplace=True)
