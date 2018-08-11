@@ -334,7 +334,11 @@ def train():
         # for id_,(iid,mid) in enumerate(dic['im'].items()):
         # if epoch==args.epoch:
         # iid_li=top_level_batch()
-        iid_li.append(set(top_level_batch())-set(iid_li))
+        iid_li=iid_li+(
+                      list(
+                               set(top_level_batch())-set(iid_li)
+                              )
+                     )
 
         origin_len=len(iid_li)
 
@@ -473,8 +477,9 @@ def train():
             if epoch==args.epoch:
                 if args.only_backward:
                     print('only_backward in {}'.format(epoch))
-                    update_id =(1000-1)*len(fn)
-                    print(update_id)
+
+                    update_id =(args.dump_interval-1)*len(fn)
+                    print(len(fn),args.dump_interval,update_id)
             assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
             rewards = []
             # m.rewards=[1]*(update_id+1)
@@ -522,6 +527,7 @@ def train():
                 print(each)
                 loader= torch.load(str(each))
                 # for (log_prob,r_value) in zip(loader['saved_log_probs'],rewards[i_:(i_+1)*len(loader['saved_log_probs'])]):
+                k=0
 
                 for k,log_prob in enumerate(loader['saved_log_probs']):
                     loss_li.append(-log_prob*rewards[k_acc+k])
