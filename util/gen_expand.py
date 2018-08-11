@@ -137,17 +137,22 @@ def re_find_y(text,m,n,cur,deploy_state,app_inter):
         return (aid not in set(app_inter.aid))
 
     ret=app_inter[['v','ab_encode']].apply(
-        lambda x: sum([m.count(each) for each in set(x.ab_encode)]),axis=1).max()
+                                           lambda x: sum([m.count(each)
+                                                          for each in set(x.ab_encode)]),axis=1).max()
+    for idx in set(m):
+        app='app_'+str(idx+1)
+        if app not in set(gp.groups.keys()):
+          # print('app_'+str(cur+1))
+          continue
+        for each,b in zip(gp.get_group(app).ab,gp.get_group(app).bid):
+          if b not in set(m):
+              continue
+          if re.findall(each,text):
+              print('\neach->{}'.format(each))
+              print('app->{}'.format(app))
+              print('text->{}'.format(text))
+              return 1,ret
 
-    for g,v in gp:
-        if not re.findall(g,text):
-            continue
-        if ('app_'+str(cur+1)) not in set(app_has(g).keys()):
-            continue
-        for each in v.ab:
-            if re.findall(each,text):
-                # print(each)
-                return 1,ret
     return 0,ret
 # def re_find_y(m,app_inter):
 #     return app_inter[['v','ab_encode']].apply(

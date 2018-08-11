@@ -296,11 +296,11 @@ def train():
         print('load game')
         checkpoint=torch.load(roll_file_dic[args.ab])
         env.load_checkpoints(checkpoint['env_dic'])
-        li_a_encode=[]
-        li_a_encode.append(np.zeros(APP_NUM))
-        li_a_encode.append(env.deploy_state['a_encode'])
-        li_a_encode.append(np.zeros(14*5))
-        env.matrix= np.vstack([env.matrix,np.hstack(li_a_encode)])
+        # li_a_encode=[]
+        # li_a_encode.append(np.zeros(APP_NUM))
+        # li_a_encode.append(env.deploy_state['a_encode'])
+        # li_a_encode.append(np.zeros(14*5))
+        # env.matrix= np.vstack([env.matrix,np.hstack(li_a_encode)])
         print(env.matrix.shape)
         print(env.deploy_state['a_encode'].max())
         del checkpoint
@@ -580,13 +580,13 @@ def train():
                 save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
                 if dic['iid'][0]!='':
                     print('dic is not empty')
-                    submit(args.run_id,args.epoch)
+                    submit(args.run_id,epoch)
                 else:
                     fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
                     # fn.sort(key=lambda x:x.stat().st_mtime)
                     print(fn[-1])
                     print('dic is empty')
-                    submit(args.run_id,args.epoch,fn=fn[-1])
+                    submit(args.run_id,epoch,fn=fn[-1])
 
                 del m.logprob_history[:]
                 del m.rewards[:]
@@ -688,8 +688,8 @@ def top_level_batch():
     del df_ins_copy
     gc.collect()
 
-    # return ba+gp.get_group(True).iid.tolist()
-    return ba
+    return ba+gp.get_group(True).iid.tolist()
+    # return ba
 
 def reput(df):
     up_limit=list(set(df.iid.value_counts()))

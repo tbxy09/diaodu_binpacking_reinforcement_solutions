@@ -345,7 +345,7 @@ class Env_stat():
         text=self.deploy_state['a'][self.n]
 
         li_=self.deploy_state['a'][self.n].split('app_')[1:]
-        m=pd.Series(li_,dtype=int).tolist()
+        m=pd.Series(li_,dtype=int)
         m=m-1
         m=m.tolist()
 
