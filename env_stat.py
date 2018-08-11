@@ -346,6 +346,8 @@ class Env_stat():
 
         li_=self.deploy_state['a'][self.n].split('app_')[1:]
         m=pd.Series(li_,dtype=int).tolist()
+        m=m-1
+        m=m.tolist()
 
         # if self.not_quick_roll==1:
             # if use_ma:
@@ -365,7 +367,7 @@ class Env_stat():
 
             for i in range(NUM_PROC):
                 # result.append(proc.apply_async(f,(text,splits[i])))
-                result.append(proc.apply_async(f,(text,m,self.n,self.deploy_state,self.splits[i])))
+                result.append(proc.apply_async(f,(text,m,self.n,cur,self.deploy_state,self.splits[i])))
 
             end_flag=0
 

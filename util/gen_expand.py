@@ -126,20 +126,28 @@ def re_find_y(text,app_inter):
 #         return 1
 
 # def re_find_y(text,m,app_inter,n,deploy_state):
-def re_find_y(text,m,n,deploy_state,app_inter):
+def re_find_y(text,m,n,cur,deploy_state,app_inter):
     import re
     # p=re.compile('(\s+)')
     # text=p.sub(' ',text)
+    gp=app_inter.groupby('aid')
+    def app_has(aid):
+        return {a:b for a,b in zip(gp.get_group(aid).bid,gp.get_group(aid).v)}
+    def app_hasnot(aid):
+        return (aid not in set(app_inter.aid))
 
     ret=app_inter[['v','ab_encode']].apply(
         lambda x: sum([m.count(each) for each in set(x.ab_encode)]),axis=1).max()
 
-    for g,v in app_inter.groupby('aid') :
-        if re.findall(g,text):
-            for each in v.ab:
-                if re.findall(each,text):
-                    # print(each)
-                    return 1,ret
+    for g,v in gp:
+        if not re.findall(g,text):
+            continue
+        if ('app_'+str(cur+1)) not in set(app_has(g).keys()):
+            continue
+        for each in v.ab:
+            if re.findall(each,text):
+                # print(each)
+                return 1,ret
     return 0,ret
 # def re_find_y(m,app_inter):
 #     return app_inter[['v','ab_encode']].apply(
