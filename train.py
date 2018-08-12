@@ -391,7 +391,7 @@ def train():
                 env.not_quick_roll=1
                 step=m(inp)
                 # mid=torch.randint(6000,size=(1,))
-                step=step.data[0]
+                step=step.data[0].tolist()
                 # digits=234
             #     print(digits)
                 # id_=digits.dot(torch.tensor([10**3,10**2,10,1]))

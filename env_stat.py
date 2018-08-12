@@ -313,11 +313,17 @@ class Env_stat():
         int_mid_real=0
         if mid_real=='ff':
             int_mid_real=-1
-        if int_mid_real==-1:
+        if choice==-1|int_mid_real==-1:
             if int_mid_real==-1:
                 self.n=(self.n+choice)%MA_NUM
                 choice=self.mn.mid[self.n]
                 self.deploy_state=self.update(cur,choice,self.n)
+            if choice==-1:
+                self.n=self.mn.mid.tolist().index(mid_real)
+                self.deploy_state=self.update(cur,mid_real,self.n)
+                if self.deploy_state['c'][1237] >1:
+                    print(self.deploy_state['c'][1237])
+# 1.1664374956546817
         else:
             self.n=(self.n+choice)%MA_NUM
             choice=self.mn.mid[self.n]
