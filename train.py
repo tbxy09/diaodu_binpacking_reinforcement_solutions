@@ -52,7 +52,7 @@ print(args.gamma)
 
 print('train')
 inst_num_dic={'a':68219,'b':68224}
-num_life={'b':40000,'a':15000}
+num_life={'b':40000,'a':85000}
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
 roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
 base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
@@ -64,6 +64,8 @@ if args.run_id not in os.listdir('/data2/run/'):os.mkdir('/data2/run/'+args.run_
 # if not args.only_backward:
 if not args.epoch:
     assert os.listdir('/data2/run/'+args.run_id)==[]
+if not args.only_backward:
+    assert first_try('/data2/run/{}'.format(args.run_id),'policy{}_inst*'.format(args.epoch))==[]
 
 pre_processor=Preprocess(base_dic[args.ab])
 df_app_res,df_machine,df_ins,df_app_inter,df_ins_sum=pre_processor.run_pre()
@@ -128,15 +130,25 @@ def quick_roll_save(e='quick_roll'):
     # dic['policy_rewards'].append(policy_rewards)
     torch.save(dic,fn)
 
-def save_checkpoints(rewards,log_probs,e,iid,id_,run_id):
+def save_checkpoints(rewards,log_probs,e,iid,id_,run_id,all=0):
     fn='/data2/run/{0}/policy{1}.pth.tar'.format(run_id,e)
     dic['saved_log_probs']=log_probs
-    env.save_checkpoints()
+    # env.save_checkpoints(
     # dic['rewards']=rewards
-    dic['env_dic']=env.dic
+    # dic['env_dic']=env.dic
     dic['rewards']=rewards
     # dic['env_dic']=env.dic
-    dic['state_dict']=m.state_dict()
+    # dic['state_dict']=m.state_dict()
+
+    dic['env_dic']=0
+
+    if (all):
+
+        env.save_checkpoints()
+        dic['env_dic']=env.dic
+        dic['state_dict']=m.state_dict()
+
+
     # dic['iid']=iid
     # dic['id_']=id_
     # dic['policy_rewards']=[]
@@ -167,7 +179,9 @@ def run_game(choice,cur,not_quick_roll,mid_real='ff'):
     # id_=id_.tolist()
     # print(id_)
 
-    reward,end=env.evaluate(cur,choice,proc,re_find_y,mid_real)
+    # su=pd.DataFrame(np.vstack([iid,mid]).T,columns=['iid','mid'])
+
+    reward,end=env.evaluate(cur,choice.data[0].tolist(),re_find_y,mid_real)
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)
     if not_quick_roll:
         # logprob=m.get_logprob(choice)
@@ -179,13 +193,11 @@ def run_game(choice,cur,not_quick_roll,mid_real='ff'):
             # ret_=ret_+each
 
     #     print(ret_)
-        if not reward:
-            # m.save_logprob(choice,reward)
-            m.save_logprob(choice,-1)
-            # log_loss.append(m.logprob_history[-1])
-            # log_reward.append(m.rewards[-1])
-            # print(log_loss,log_reward)
-    return end
+        m.save_logprob(choice,-1)
+        # if not reward:
+        #     m.save_logprob(choice,-1)
+    # return end
+    return 1
 
 #     loss=digits.to(torch.float).dot(m.get_logprob(digits)*-1)*rewards
 
@@ -390,30 +402,15 @@ def train():
             if step==-1|args.non_roll:
                 env.not_quick_roll=1
                 step=m(inp)
-                # mid=torch.randint(6000,size=(1,))
-                step=step.data[0].tolist()
-                # digits=234
-            #     print(digits)
-                # id_=digits.dot(torch.tensor([10**3,10**2,10,1]))
-                # dic['mid'][id_]=mid
-                # dic['aid'][id_]=aid
-                # dic['iid'][id_]=iid
-            ## into a quick_roll
             else:
                 print('in quick roll')
-                # break
                 env.not_quick_roll=0
-                # mid=dic['im'][iid]
 
             end=run_game(step,cur,env.not_quick_roll,mid_real)
-            # bar.update(id_+1)
 
-            # for each in ['c','m','d','p_pm','m_pm','pm','cm','a']:
-                # assert env.deploy_state[each].shape==(MA_NUM,)
-
-            # e='_'.join([str(epoch),str(iid)])
             if verbose:
                 if (len(m.rewards)+1)%args.dump_interval==0:
+                    print(len(m.rewards))
                 # if (len(m.rewards)+1)%100==0:
                     e='_'.join([str(epoch),iid])
                     # save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
@@ -425,8 +422,10 @@ def train():
                     # print(m.rewards[-1],m.logprob_history[-1])
                     del m.rewards[:]
                     del m.logprob_history[:]
-                    del log_loss[:]
-                    del log_reward[:]
+                    # m.rewards=[]
+                    # m.logprob_history=[]
+                    # del log_loss[:]
+                    # del log_reward[:]
 
             # if (len(iid_li)-origin_len) >NUM_LIFE:
             #     print('\nlen break')
@@ -471,6 +470,7 @@ def train():
                 print('\nlen break')
                 break
 
+
         fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
         print(fn)
         if epoch%1==0:
@@ -481,48 +481,34 @@ def train():
                     update_id =(args.dump_interval-1)*len(fn)
                     print(len(fn),args.dump_interval,update_id)
             assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
-            rewards = []
-            # m.rewards=[1]*(update_id+1)
-            temp=[-1]*(update_id)
-            # print(len(m.rewards),m.rewards[0],m.rewards[-1])
-            # ipdb.set_trace()
-            # log_rewards = []
-            # log_saved = []
-            R=0
-            # for r in m.rewards[::-1]:
-            for r in temp:
-                R = r + args.gamma * R
-                rewards.insert(0, R)
 
-            if len(rewards)>playing_len:
-                playing_len=len(rewards)
+            if dic['iid'][0]!='':
 
-            # if playing_len>len(iid_li)-1:
-            #     print('\n---------------------------')
-            #     print('\nGame Win')
-            #     print('\n---------------------------')
-            #     break
+                iid=dic['iid']
+                mid=dic['mid']
 
-            rewards = torch.Tensor(rewards)
+                su=pd.DataFrame(np.vstack([iid,mid]).T,columns=['iid','mid'])
 
-            # log_rewards.append(rewards.data.numpy())
+                su.mid.replace('',float('NaN'),inplace=True)
+                su.iid.replace('',float('NaN'),inplace=True)
+                print(su[su.mid.notnull()].shape,df_ins[df_ins.mid.notnull()].shape,df_ins.shape)
+                su=su[su.mid.notnull()]
+                su.to_csv('result_{0}_{1}.csv'.format(args.ab,args.epoch), sep=",", index=False, header=None,line_terminator='\n')
 
-            rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
-            rewards = rewards/10
-            print(rewards.shape)
-            # print(rewards[:10])
+            from gen_expand import ali_run
+            print('ali is runing')
+            ali_run()
 
-            loss_li=[]
+            rewards=pd.read_csv('out111',header=None).values
+            print(len(rewards))
 
-            # log_saved.append(m.logprob_history.data.numpy())
-            # log_saved.append(torch.cat(m.logprob_history).data.numpy())
+            rewards=torch.Tensor(rewards)
 
-
-            # if epoch==0&args.only_backward==1
-                    # fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(args.epoch))
             fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
+
             fn.sort(key=lambda x:x.stat().st_mtime)
             k_acc=0
+            log_prob_li=[]
             for i_,each in enumerate(fn):
                 print(each)
                 loader= torch.load(str(each))
@@ -530,24 +516,36 @@ def train():
                 k=0
 
                 for k,log_prob in enumerate(loader['saved_log_probs']):
-                    loss_li.append(-log_prob*rewards[k_acc+k])
+                    # loss_li.append(-log_prob*rewards[k_acc+k])
+                    log_prob_li.append(log_prob*rewards[k_acc+k])
                 k_acc=k_acc+(k+1)
 
-            print(len(loss_li))
+            for log_prob,r_value in zip(m.logprob_history,rewards[-len(m.logprob_history):]):
+                log_prob_li.append(log_prob*r_value)
 
+            print(len(log_prob_li))
 
-            loss = torch.cat(loss_li).sum()
+            log_prob_filter_list=[each for each in log_prob_li if each!=0]
+
+            temp=[-1]*(len(log_prob_filter_list))
+
+            rewards=[]
+            R=0
+            for r in temp:
+                R = r + args.gamma * R
+                rewards.insert(0, R)
+
+            rewards = torch.Tensor(rewards)
+            rewards = (rewards - rewards.mean()) / (rewards.std() + torch.tensor(np.finfo(np.float32).eps,dtype=torch.float))
+            rewards = rewards/10
 
             loss_li=[]
 
-            for log_prob,r_value in zip(m.logprob_history,rewards[-len(m.logprob_history):]):
-            # for log_prob,r_value in zip(log_loss,rewards[-len(log_loss):]):
+            for log_prob,r_value in zip(log_prob_filter_list,rewards):
                 loss_li.append(-log_prob*r_value)
 
-            if loss_li:
-                loss=torch.add(loss,torch.cat(loss_li).sum())
-            else:
-                print('the second loss_li is empty')
+
+            loss = torch.cat(loss_li).sum()
 
             print('\n---------------------------')
             print(loss)
@@ -555,7 +553,8 @@ def train():
 
             # log_saved.append(loss.data.numpy())
 
-            del loss_li[:]
+            # del loss_li[:]
+            loss_li=[]
 
             # if loss_old==loss:
                 # print('loss stay the same')
@@ -577,7 +576,7 @@ def train():
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id)
+                save_checkpoints(log_rewards,log_saved,epoch,0,0,args.run_id,1)
                 if dic['iid'][0]!='':
                     print('dic is not empty')
                     submit(args.run_id,epoch)
@@ -588,12 +587,13 @@ def train():
                     print('dic is empty')
                     submit(args.run_id,epoch,fn=fn[-1])
 
-                del m.logprob_history[:]
-                del m.rewards[:]
-                del log_loss[:]
-                del log_reward[:]
+                # del m.logprob_history[:]
+                # del m.rewards[:]
+                m.logprob_history=[]
+                m.rewards=[]
+                # del log_loss[:]
+                # del log_reward[:]
                 dic_init()
-
 def deploy_roll():
     dic_init()
     m.logprob_history=[]
@@ -607,16 +607,31 @@ def deploy_roll():
     del df_ins_copy
     gc.collect()
 
-    bar=Progbar(target=len(iid_li),width=30,interval=0.05)
-    for id_,iid in enumerate(iid_li):
+    print('load game')
+    checkpoint=torch.load(roll_file_dic[args.ab])
+    env.load_checkpoints(checkpoint['env_dic'])
 
-        mid_real=dic['imid'][iid]
+    print('load MID')
+    checkpoint=torch.load('/data2/run/{}/policy{}_only_dic.pth.tar'.format('n',5))
+    iid_li=checkpoint['iid']
+
+    bar=Progbar(target=len(iid_li),width=30,interval=0.05)
+
+    for id_,iid in enumerate(iid_li[:]):
+        # print(id_)
+
+        mid_real=checkpoint['mid'][id_]
+
+        # print(mid_real)
+        # print(iid)
+
         if id_==0:
             print(mid_real)
             print(iid)
             print('deployed_roll')
 
         aid=env.i_a[iid]
+        # print(aid)
         cur=env.a_idx[aid]
         end=run_game(-1,cur,env.not_quick_roll,mid_real)
         bar.update(id_+1)

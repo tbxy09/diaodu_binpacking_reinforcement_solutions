@@ -1,6 +1,15 @@
 import pandas as pd
 import numpy as np
 import torch
+from subprocess import Popen,PIPE
+
+def ali_run():
+    with Popen(["sh","run.sh"], stdout=PIPE) as proc:
+        print(proc.stdout.read())
+
+    with open('out111') as f:
+        li=f.readlines()
+
 def proc_split(app_inter,unit,num):
 # 4405
     li=[]
@@ -157,6 +166,7 @@ def re_find_y(text,m,n,cur,deploy_state,app_inter):
 
          if m.count(ed(b))>app_has(app)[b]+1*(app==b):
            print('{}->{}'.format(app,b))
+           print(m)
            return 1,ret
 
     return 0,ret
@@ -305,10 +315,11 @@ def ck_parser(fn,m,env_stat=None):
     # r=ck['rewards']
     log_prob=ck['saved_log_probs']
     # mid=ck['step']
-    mid=ck['imid']
+    mid=ck['mid']
     iid=ck['iid']
     if env_stat:
         env_stat.matrix=ck['env_dic']['matrix']
+        env_stat.counter=ck['env_dic']['counter']
         env_stat.deploy_state=ck['env_dic']['deploy_state']
         # return log_prob,[mid[i] for i in range(68219) if mid[i]!=-1], [iid[i] for i in range(68219) if iid[i]!='']
         return mid,iid

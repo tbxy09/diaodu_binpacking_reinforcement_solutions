@@ -11,7 +11,7 @@ APP_NUM=9338
 # INST_NUM=68219
 # INST_NUM=68224
 
-NUM_PROC=12
+NUM_PROC=1
 print('=============')
 print(NUM_PROC)
 print('=============')
@@ -87,6 +87,7 @@ class Env_stat():
         self.ret_v_pm=[]
         self.ret_v_cpu_mean=[]
         self.ret_app_infer=[]
+        self.nnn=np.identity(APP_NUM)
 
         self.counter=[0,0]
 
@@ -295,7 +296,7 @@ class Env_stat():
     def evaluate_at_the_end(self,f,proc,num_proc):
         evaluate_whole(f,self.deploy_state,self.splits,self.app_inter,proc,num_proc,self.evl_counter)
 
-    def evaluate(self,cur,choice,proc,f,mid_real):
+    def evaluate(self,cur,choice,f,mid_real,proc=None):
 
         self.ret_init()
         self.li_init()
@@ -313,7 +314,7 @@ class Env_stat():
         int_mid_real=0
         if mid_real=='ff':
             int_mid_real=-1
-        if choice==-1|int_mid_real==-1:
+        if (choice==-1)+(int_mid_real==-1):
             if int_mid_real==-1:
                 self.n=(self.n+choice)%MA_NUM
                 choice=self.mn.mid[self.n]
@@ -321,8 +322,8 @@ class Env_stat():
             if choice==-1:
                 self.n=self.mn.mid.tolist().index(mid_real)
                 self.deploy_state=self.update(cur,mid_real,self.n)
-                if self.deploy_state['c'][1237] >1:
-                    print(self.deploy_state['c'][1237])
+                # if self.deploy_state['c'][1237] >1:
+                    # print(self.deploy_state['c'][1237])
 # 1.1664374956546817
         else:
             self.n=(self.n+choice)%MA_NUM
@@ -331,29 +332,37 @@ class Env_stat():
             # choice_minus=self.mn.mid[n_minus]
             self.deploy_state=self.update(cur,choice,self.n,mid_real,n_minus)
 
+
+        # su=pd.DataFrame(np.vstack([iid,mid]).T,columns=['iid','mid'])
+
         # print(choice)
 
-
         self.env_matrix(cur)
-        # if not self.not_quick_roll:
-            # return 1,0
 
-        for k in  ['c','m','d','p_pm','m_pm','pm']:
-            # if any(self.deploy_state[k]>1):
-            if self.deploy_state[k][self.n]>1:
-                # print('\n')
-                # print(k ,'end')
-                self.counter[0]=self.counter[0]+1
-                return 0,1
+        ignore=1
 
-        # text=(self.deploy_state['a']+' ').sum()
+        if not ignore:
 
-        text=self.deploy_state['a'][self.n]
+            # if not self.not_quick_roll:
+                # return 1,0
 
-        li_=self.deploy_state['a'][self.n].split('app_')[1:]
-        m=pd.Series(li_,dtype=int)
-        m=m-1
-        m=m.tolist()
+            for k in  ['c','m','d','p_pm','m_pm','pm']:
+                # if any(self.deploy_state[k]>1):
+                if self.deploy_state[k][self.n]>1:
+                    # print('\n')
+                    # print(k ,'end')
+                    # print(cur,self.n)
+                    self.counter[0]=self.counter[0]+1
+                    # return 0,1
+
+            # text=(self.deploy_state['a']+' ').sum()
+
+            text=self.deploy_state['a'][self.n]
+
+            li_=self.deploy_state['a'][self.n].split('app_')[1:]
+            m=pd.Series(li_,dtype=int)
+            m=m-1
+            m=m.tolist()
 
         # if self.not_quick_roll==1:
             # if use_ma:
@@ -365,8 +374,7 @@ class Env_stat():
 
             # startf=time.time()
             # end=self.re_find(text,0)
-        ignore=0
-
+        ignore=1
         if not ignore:
 
             result=[]
@@ -529,22 +537,22 @@ class Env_stat():
                 }
 
     def step_op(self,step):
-        self.li_cpu.append(self.unit['c']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_cpu.append(self.unit['c']*self.nnn[step,:]*-1)
         self.li_cpu.append(self.matrix[0][:APP_NUM])
 
-        self.li_mem.append(self.unit['m']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_mem.append(self.unit['m']*self.nnn[step,:]*-1)
         self.li_mem.append(self.matrix[1][:APP_NUM])
 
-        self.li_disk.append(self.unit['d']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_disk.append(self.unit['d']*self.nnn[step,:]*-1)
         self.li_disk.append(self.matrix[2][:APP_NUM])
 
-        self.li_p.append(self.unit['p_pm']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_p.append(self.unit['p_pm']*self.nnn[step,:]*-1)
         self.li_p.append(self.matrix[3][:APP_NUM])
 
-        self.li_m.append(self.unit['m_pm']*np.identity(APP_NUM)[step,:]*-1)
+        self.li_m.append(self.unit['m_pm']*self.nnn[step,:]*-1)
         self.li_m.append(self.matrix[4][:APP_NUM])
 
-        self.li_pm.append(self.unit['pm']*np.identity(APP_NUM)[step,:]*-1)
+        # self.li_pm.append(self.unit['pm']*nnn(APP_NUM)[step,:]*-1)
         self.li_pm.append(self.matrix[5][:APP_NUM])
 
     def li_stack(self,verbose):
