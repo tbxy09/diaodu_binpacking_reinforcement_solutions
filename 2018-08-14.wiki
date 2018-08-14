@@ -1,5 +1,5 @@
 Here is diary after the diaodu
-1.- np.identity
+- np.identity
 I use a np.identity as filter to put the app unit info to the place where it should be
 
 li.append(each_unit_update_t*np.identity)
@@ -11,7 +11,7 @@ what I am thinking, why creating a np constant class, I thought it like a np con
 
 here is two examples,you can try
 
-1. another topic I want to share,is the gradient expoding and gradient vansh issue
+- another topic I want to share,is the gradient expoding and gradient vansh issue
 rewards = 0.1*1
 the most effective one to solve the gradient explode
 the gradient will finally happen in my case, it almost same inp input,
