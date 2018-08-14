@@ -32,5 +32,6 @@ the ag blog, is very helpful
 ### The Classic Solutions
 
 https://github.com/skjolber/3d-bin-container-packing
+
 https://github.com/benmaier/binpacking
 
