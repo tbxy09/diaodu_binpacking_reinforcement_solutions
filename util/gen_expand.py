@@ -3,7 +3,9 @@ import numpy as np
 import torch
 from subprocess import Popen,PIPE
 
-def ali_run():
+def ali_run(epoch):
+    with Popen(["cp","result_a_{}.csv".format(epoch),"result_a.csv"], stdout=PIPE) as proc:
+        print(proc.stdout.read())
     with Popen(["sh","run.sh"], stdout=PIPE) as proc:
         print(proc.stdout.read())
 

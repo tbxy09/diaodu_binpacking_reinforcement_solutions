@@ -13,7 +13,7 @@ sys.path.append('./')
 from dst import *
 from model import *
 sys.path.append('./util')
-from gen_expand import re_find_y,evaluate_whole,re_find_whole,ck_parser
+from gen_expand import re_find_y,evaluate_whole,re_find_whole,ck_parser,ali_run
 from threed_view import *
 from meter import AverageMeter
 import random
@@ -52,7 +52,7 @@ print(args.gamma)
 
 print('train')
 inst_num_dic={'a':68219,'b':68224}
-num_life={'b':40000,'a':85000}
+num_life={'b':40000,'a':65000}
         # checkpoint=torch.load('./policyquick_roll.pth.tar')
 roll_file_dic={'a':'/data2/a_/policyquick_roll.pth.tar','b':'/data2/b_/policyquick_roll.pth.tar'}
 base_dic={'a':'/mnt/osstb/tianchi/diaodu','b':'/mnt/osstb/diaodu'}
@@ -141,6 +141,7 @@ def save_checkpoints(rewards,log_probs,e,iid,id_,run_id,all=0):
     # dic['state_dict']=m.state_dict()
 
     dic['env_dic']=0
+    dic['state_dict']=0
 
     if (all):
 
@@ -351,15 +352,14 @@ def train():
                                set(top_level_batch())-set(iid_li)
                               )
                      )
-
         origin_len=len(iid_li)
+        iid_li_origin=iid_li.copy()
 
 
         bar=Progbar(target=len(iid_li)+NUM_LIFE,width=30,interval=0.05)
         update_id=0
         log_iid='ff'
         # np.random.shuffle(iid_li)
-
         for id_,iid in enumerate(iid_li):
             if epoch==args.epoch:
                 if args.only_backward:
@@ -410,7 +410,8 @@ def train():
 
             if verbose:
                 if (len(m.rewards)+1)%args.dump_interval==0:
-                    print(len(m.rewards))
+                    print(iid_li[-1])
+                    # print(len(m.rewards))
                 # if (len(m.rewards)+1)%100==0:
                     e='_'.join([str(epoch),iid])
                     # save_checkpoints(m.rewards,m.logprob_history,e,iid,id_,args.run_id)
@@ -422,6 +423,26 @@ def train():
                     # print(m.rewards[-1],m.logprob_history[-1])
                     del m.rewards[:]
                     del m.logprob_history[:]
+                    if dic['iid'][0]!='':
+
+                        iids=dic['iid']
+                        mids=dic['mid']
+                        su=pd.DataFrame(np.vstack([iids,mids]).T,columns=['iid','mid'])
+                        su.mid.replace('',float('NaN'),inplace=True)
+                        su.iid.replace('',float('NaN'),inplace=True)
+                        print(su[su.mid.notnull()].shape,df_ins[df_ins.mid.notnull()].shape,df_ins.shape)
+                        su=su[su.mid.notnull()]
+                        # su=su.iloc[-args.dump_interval+1:,]
+                        su.to_csv('result_{0}_{1}.csv'.format(args.ab,epoch), sep=",", index=False, header=None,line_terminator='\n')
+                        print('ali is runing')
+                        # from gen_expand import ali_run
+                        ali_run(args.epoch)
+                        rewards=pd.read_csv('out111',header=None).values
+                        tttt=iid_li_origin+[su.iid[id_] for id_, each in enumerate(rewards) if each>0]
+                        for i in range(len(iid_li)):
+                            iid_li.pop()
+                        [iid_li.append(each) for each in tttt]
+                        print(len(iid_li))
                     # m.rewards=[]
                     # m.logprob_history=[]
                     # del log_loss[:]
@@ -445,13 +466,8 @@ def train():
                 if log_iid=='ff':
                     log_iid=iid
                     print(dic['imid'][iid])
-
-                iid_li.append(iid)
+                # iid_li.append(iid)
                 update_id=update_id+1
-                # bar.update(id_)
-                # print(iid)
-                # print(dic['im'][iid])
-                # print(dic['im'][iid])
             else:
 
                 # dic['step'][id_]=step
@@ -472,7 +488,7 @@ def train():
 
 
         fn=first_try('/data2/run/{}'.format(args.run_id),'policy{}_*'.format(epoch))
-        print(fn)
+        # print(fn)
         if epoch%1==0:
             if epoch==args.epoch:
                 if args.only_backward:
@@ -481,7 +497,7 @@ def train():
                     update_id =(args.dump_interval-1)*len(fn)
                     print(len(fn),args.dump_interval,update_id)
             assert (update_id-len(m.rewards))%(args.dump_interval-1)==0
-
+# ali_run
             if dic['iid'][0]!='':
 
                 iid=dic['iid']
@@ -493,14 +509,17 @@ def train():
                 su.iid.replace('',float('NaN'),inplace=True)
                 print(su[su.mid.notnull()].shape,df_ins[df_ins.mid.notnull()].shape,df_ins.shape)
                 su=su[su.mid.notnull()]
-                su.to_csv('result_{0}_{1}.csv'.format(args.ab,args.epoch), sep=",", index=False, header=None,line_terminator='\n')
+                su.to_csv('result_{0}_{1}.csv'.format(args.ab,epoch), sep=",", index=False, header=None,line_terminator='\n')
 
-            from gen_expand import ali_run
+            # from gen_expand import ali_run
             print('ali is runing')
-            ali_run()
+            ali_run(args.epoch)
 
             rewards=pd.read_csv('out111',header=None).values
+            print('===========')
+            print(sum(rewards))
             print(len(rewards))
+            print('===========')
 
             rewards=torch.Tensor(rewards)
 
@@ -510,7 +529,7 @@ def train():
             k_acc=0
             log_prob_li=[]
             for i_,each in enumerate(fn):
-                print(each)
+                # print(each)
                 loader= torch.load(str(each))
                 # for (log_prob,r_value) in zip(loader['saved_log_probs'],rewards[i_:(i_+1)*len(loader['saved_log_probs'])]):
                 k=0
@@ -572,6 +591,10 @@ def train():
             print(playing_len,len(rewards),update_id,env.counter[0],env.counter[1])
             print(env.evl_counter[0],env.evl_counter[1])
             print('---------------------------')
+            loss=loss-(env.evl_counter[0]+env.evl_counter[1])/(INST_NUM*2)-update_id/(INST_NUM)
+            print('\n======================')
+            print(loss)
+            print('\n======================')
             if epoch%1==0:
                 optimizer.zero_grad()
                 loss.backward()
