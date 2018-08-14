@@ -28,3 +28,9 @@ change the mid def -> as a moving step
 if the sample action will sample out 0,if sample out 0 means stay at the begining, if other value, means move_step%MACHINE_NUM , a loop series if mid is just the mid, the app will keep backward the positive reaction, to make the weight too hight to saturate the softmax
 
 the ag blog, is very helpful
+
+### The Classic Solutions
+
+https://github.com/skjolber/3d-bin-container-packing
+https://github.com/benmaier/binpacking
+
