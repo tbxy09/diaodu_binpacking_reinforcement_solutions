@@ -10,7 +10,8 @@ I use a np.identity as filter to put the app unit info to the place where it sho
 
 ```
 
-li.append(each_unit_update_t*np.identity) np.stack(li)
+li.append(each_unit_update_t*np.identity)
+np.stack(li)
 
 ```
 
