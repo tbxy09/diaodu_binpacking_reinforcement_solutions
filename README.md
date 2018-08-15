@@ -15,13 +15,13 @@ np.stack(li)
 
 ```
 
-I thouhgt it is a great idea,how, here is the problem, np.idenity as dynamic created inside running it has the app exactly size APP_NUM=more than 9000 what I am thinking, why creating a np constant class, I thought it like a np constant value, but it is not
+I thouhgt it is a great idea,however, here is the problem, np.idenity as dynamic created inside running it has the app exactly size APP_NUM=more than 9000 what I am thinking, why keep creating np class(this cause my program extremely slow), I thought it like a np constant value, but it is not
 
 here is two examples,you can try
 
 2. another topic I want to share,is the gradient expoding and gradient vanish issue
 
-rewards = 0.1*1 the most effective one to solve the gradient explode the gradient will finally happen in my case, it almost same inp input,
+rewards = 0.1*1 the most effective one to solve the gradient explode the gradient explode will finally happen in my case, it almost same inp input,
 
 change the mid def -> as a moving step
 
@@ -36,4 +36,4 @@ https://github.com/skjolber/3d-bin-container-packing
 https://github.com/benmaier/binpacking
 ### What I thought today(08-15) see what happend
 
-I need to work first on some very simple example with my policy gradient solution
+I need to work first on some very simple bin-packing example with my policy gradient solution
