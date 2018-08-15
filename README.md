@@ -4,7 +4,7 @@ this not wining solution, and actually ,still in develop, but upload any way, ch
 
 Here is diary after the diaodu
 
-1. np.identity
+### np.identity
 
 I use a np.identity as filter to put the app unit info to the place where it should be
 
@@ -19,7 +19,7 @@ I thouhgt it is a great idea,however, here is the problem, np.idenity as dynamic
 
 here is two examples,you can try
 
-2. another topic I want to share,is the gradient expoding and gradient vanish issue
+### another topic I want to share,is the gradient expoding and gradient vanish issue
 
 rewards = 0.1*1 the most effective one to solve the gradient explode the gradient explode will finally happen in my case, it almost same inp input,
 
