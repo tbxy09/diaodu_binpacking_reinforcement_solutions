@@ -1,0 +1,1 @@
+java -cp :lib/commons-lang3-3.4.jar:lib/guava-25.1-jre.jar com.aliyun.tianchi.mgr.evaluate.evaluate.file.evaluator.AlibabaSchedulerEvaluatorRun app_resource.csv machine_res.csv inst_deploy.csv app_inter.csv result_a.csv>out111
