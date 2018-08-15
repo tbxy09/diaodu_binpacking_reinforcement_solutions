@@ -34,6 +34,6 @@ the ag blog, is very helpful
 https://github.com/skjolber/3d-bin-container-packing
 
 https://github.com/benmaier/binpacking
-### What I thought today(0815) see what happend
+### What I thought today(08-15) see what happend
 
 I need to work first on some very simple example with my policy gradient solution
