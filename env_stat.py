@@ -11,7 +11,7 @@ APP_NUM=9338
 # INST_NUM=68219
 # INST_NUM=68224
 
-NUM_PROC=12
+NUM_PROC=2
 print('=============')
 print(NUM_PROC)
 print('=============')
@@ -343,8 +343,9 @@ class Env_stat():
             if self.deploy_state[k][self.n]>1:
                 # print('\n')
                 # print(k ,'end')
+                # print(cur,self.n)
                 self.counter[0]=self.counter[0]+1
-                return 0,1
+                # return 0,1
 
         # text=(self.deploy_state['a']+' ').sum()
 

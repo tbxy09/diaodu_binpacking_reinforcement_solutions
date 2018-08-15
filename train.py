@@ -607,10 +607,19 @@ def deploy_roll():
     del df_ins_copy
     gc.collect()
 
-    bar=Progbar(target=len(iid_li),width=30,interval=0.05)
-    for id_,iid in enumerate(iid_li):
+    print('load game')
+    checkpoint=torch.load(roll_file_dic[args.ab])
+    env.load_checkpoints(checkpoint['env_dic'])
 
-        mid_real=dic['imid'][iid]
+    print('load MID')
+    checkpoint=torch.load('/data2/run/{}/policy{}_only_dic.pth.tar'.format('n',5))
+    iid_li=checkpoint['iid']
+
+    bar=Progbar(target=len(iid_li),width=30,interval=0.05)
+
+    for id_,iid in enumerate(iid_li[:100]):
+
+        mid_real=checkpoint['mid'][id_]
         if id_==0:
             print(mid_real)
             print(iid)

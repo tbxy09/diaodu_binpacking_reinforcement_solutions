@@ -132,6 +132,7 @@ def re_find_y(text,m,n,cur,deploy_state,app_inter):
     # text=p.sub(' ',text)
     gp=app_inter.groupby('aid')
     def app_has(aid):
+<<<<<<< Updated upstream
      return {app:value for app,value in zip(gp.get_group(aid).bid,gp.get_group(aid).v)}
     def app_hasnot(aid):
      return (aid not in set(app_inter.aid))
@@ -158,6 +159,31 @@ def re_find_y(text,m,n,cur,deploy_state,app_inter):
          if m.count(ed(b))>app_has(app)[b]+1*(app==b):
            print('{}->{}'.format(app,b))
            return 1,ret
+=======
+        return {app:value for app,value in zip(gp.get_group(aid).bid,gp.get_group(aid).v)}
+    def app_hasnot(aid):
+        return (aid not in set(app_inter.aid))
+    def ed(app):
+        return int(app.split('app_')[-1])-1
+
+
+    ret=app_inter[['v','ab_encode']].apply(
+                                           lambda x: sum([m.count(each)
+                                                          for each in set(x.ab_encode)]),axis=1).max()
+    # print(m)
+    for idx in set(m):
+        # if idx==8193:
+        #     print(m)
+        app='app_'+str(idx+1)
+        if app not in set(gp.groups.keys()):
+          continue
+        for b in set(app_has(app).keys()):
+          if ed(b) not in set(m):
+            continue
+          if m.count(ed(b))>app_has(app)[b]+1*(app==b):
+            print('{}->{}'.format(app,b))
+            return 1,ret
+>>>>>>> Stashed changes
 
     return 0,ret
 # def re_find_y(m,app_inter):
@@ -305,7 +331,7 @@ def ck_parser(fn,m,env_stat=None):
     # r=ck['rewards']
     log_prob=ck['saved_log_probs']
     # mid=ck['step']
-    mid=ck['imid']
+    mid=ck['mid']
     iid=ck['iid']
     if env_stat:
         env_stat.matrix=ck['env_dic']['matrix']

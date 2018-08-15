@@ -20,7 +20,7 @@ from dst import *
 from model import *
 from policymodel import *
 sys.path.append('./util')
-from gen_expand import *
+from gen_expand import ck_parser
 from threed_view import *
 from meter import AverageMeter
 import random
