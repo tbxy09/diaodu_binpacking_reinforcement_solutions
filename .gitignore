@@ -91,3 +91,7 @@ util/__pycache__/__init__.cpython-35.pyc
 util/__pycache__/gen_expand.cpython-35.pyc
 util/__pycache__/meter.cpython-35.pyc
 util/__pycache__/threed_view.cpython-35.pyc
+pom.xml
+com/aliyun/tianchi/mgr/evaluate/evaluate/file/evaluator/AlibabaSchedulerEvaluatorRun.class
+lib/commons-lang3-3.4.jar
+lib/guava-25.1-jre.jar
